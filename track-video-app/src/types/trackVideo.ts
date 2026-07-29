@@ -24,20 +24,20 @@ export const VIDEO_TEMPLATES = [
     accent: '#7f8cff',
   },
   {
-    value: 'music-visualizer',
-    label: 'Music Visualizer',
-    shortLabel: 'Visualizer',
-    description: 'A classic audio-reactive visualizer built around the track cover.',
-    icon: 'mdi-waveform',
-    accent: '#48d7ff',
-  },
-  {
     value: 'vinyl-orbit',
     label: 'Vinyl Orbit',
     shortLabel: 'Vinyl',
     description: 'A spinning record with a radial spectrum and moving tonearm.',
     icon: 'mdi-album',
     accent: '#ffac5f',
+  },
+  {
+    value: 'music-visualizer',
+    label: 'Music Visualizer',
+    shortLabel: 'Visualizer',
+    description: 'A classic audio-reactive visualizer built around the track cover.',
+    icon: 'mdi-waveform',
+    accent: '#48d7ff',
   },
 ] as const
 
