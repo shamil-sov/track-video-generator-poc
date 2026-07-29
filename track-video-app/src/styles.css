@@ -1,0 +1,53 @@
+:root {
+  color-scheme: dark;
+  font-family:
+    "Avenir Next",
+    "Segoe UI",
+    Helvetica,
+    Arial,
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #101116;
+  scroll-behavior: smooth;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+.page-container {
+  width: min(100%, 1240px);
+  padding-right: 24px !important;
+  padding-left: 24px !important;
+}
+
+.v-btn {
+  font-weight: 720;
+  letter-spacing: -0.01em;
+}
+
+.v-field {
+  border-radius: 12px;
+}
+
+@media (max-width: 620px) {
+  .page-container {
+    padding-right: 16px !important;
+    padding-left: 16px !important;
+  }
+}
