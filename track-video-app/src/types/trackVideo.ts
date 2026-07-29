@@ -23,6 +23,22 @@ export const VIDEO_TEMPLATES = [
     icon: 'mdi-blur',
     accent: '#7f8cff',
   },
+  {
+    value: 'music-visualizer',
+    label: 'Music Visualizer',
+    shortLabel: 'Visualizer',
+    description: 'A classic audio-reactive visualizer built around the track cover.',
+    icon: 'mdi-waveform',
+    accent: '#48d7ff',
+  },
+  {
+    value: 'vinyl-orbit',
+    label: 'Vinyl Orbit',
+    shortLabel: 'Vinyl',
+    description: 'A spinning record with a radial spectrum and moving tonearm.',
+    icon: 'mdi-album',
+    accent: '#ffac5f',
+  },
 ] as const
 
 export type TrackVideoTemplate = typeof VIDEO_TEMPLATES[number]['value']
@@ -56,6 +72,7 @@ export interface TrackVideoJob {
   processingDurationMs: number | null
   totalDurationMs: number | null
   videoUrl: string | null
+  thumbnailUrl: string | null
   error: TrackVideoJobError | null
 }
 

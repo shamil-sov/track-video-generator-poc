@@ -92,6 +92,7 @@
                   <td>
                     <div class="template-name">
                       <video
+                        v-if="templateVideos[summary.template]"
                         :src="templateVideos[summary.template]"
                         :aria-label="`${summary.label} video example`"
                         class="template-performance-preview"
@@ -101,6 +102,13 @@
                         playsinline
                         preload="metadata"
                       ></video>
+                      <span
+                        v-else
+                        class="template-performance-preview template-performance-preview--placeholder"
+                        aria-hidden="true"
+                      >
+                        <v-icon :icon="templateIcons[summary.template]" size="20" />
+                      </span>
                       <span>{{ summary.label }}</span>
                     </div>
                   </td>
@@ -165,10 +173,18 @@ import { templateLabel, type TrackVideoTemplate } from '@/types/trackVideo'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
 import { summarizeByTemplate, summarizeTimings } from '@/utils/insights'
 
-const templateVideos: Record<TrackVideoTemplate, string> = {
+const templateVideos: Partial<Record<TrackVideoTemplate, string>> = {
   orbit: orbitVideo,
   'prism-spectrum': prismVideo,
   '3d-style': threeDimensionalVideo,
+}
+
+const templateIcons: Record<TrackVideoTemplate, string> = {
+  orbit: 'mdi-orbit',
+  'prism-spectrum': 'mdi-prism',
+  '3d-style': 'mdi-blur',
+  'music-visualizer': 'mdi-waveform',
+  'vinyl-orbit': 'mdi-album',
 }
 
 const {
@@ -464,6 +480,15 @@ td {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   border-radius: 8px;
   box-shadow: 0 7px 16px rgba(0, 0, 0, 0.28);
+}
+
+.template-performance-preview--placeholder {
+  display: grid;
+  place-items: center;
+  color: rgba(var(--v-theme-on-surface), 0.72);
+  background:
+    radial-gradient(circle at 50% 38%, rgba(var(--v-theme-primary), 0.22), transparent 35%),
+    #111217;
 }
 
 @media (max-width: 950px) {

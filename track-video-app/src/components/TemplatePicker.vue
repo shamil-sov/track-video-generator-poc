@@ -14,6 +14,7 @@
       @click="model = template.value"
     >
       <video
+        v-if="templateVideos[template.value]"
         :src="templateVideos[template.value]"
         :poster="templateImages[template.value]"
         :aria-label="`${template.label} video example`"
@@ -24,6 +25,14 @@
         playsinline
         preload="metadata"
       ></video>
+      <span
+        v-else
+        class="template-preview template-preview--placeholder"
+        :class="`template-preview--${template.value}`"
+        aria-hidden="true"
+      >
+        <v-icon :icon="template.icon" size="34" />
+      </span>
 
       <span class="template-copy">
         <span class="template-name">{{ template.label }}</span>
@@ -51,13 +60,13 @@ import { VIDEO_TEMPLATES, type TrackVideoTemplate } from '@/types/trackVideo'
 
 const model = defineModel<TrackVideoTemplate>({ required: true })
 
-const templateImages: Record<TrackVideoTemplate, string> = {
+const templateImages: Partial<Record<TrackVideoTemplate, string>> = {
   orbit: orbitThumbnail,
   'prism-spectrum': prismThumbnail,
   '3d-style': threeDimensionalThumbnail,
 }
 
-const templateVideos: Record<TrackVideoTemplate, string> = {
+const templateVideos: Partial<Record<TrackVideoTemplate, string>> = {
   orbit: orbitVideo,
   'prism-spectrum': prismVideo,
   '3d-style': threeDimensionalVideo,
@@ -111,6 +120,23 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
   object-position: center;
   border-radius: 14px;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+}
+
+.template-preview--placeholder {
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.9);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(72, 215, 255, 0.42), transparent 22%),
+    repeating-linear-gradient(90deg, transparent 0 8px, rgba(72, 215, 255, 0.13) 8px 10px),
+    #101a24;
+}
+
+.template-preview--vinyl-orbit {
+  background:
+    radial-gradient(circle, #ffac5f 0 5%, #19191d 6% 23%, #34343b 24% 25%, #131316 26% 40%, #2a2a30 41% 42%, #111114 43% 58%, transparent 59%),
+    radial-gradient(circle at 50% 50%, rgba(255, 172, 95, 0.36), transparent 68%),
+    #221813;
 }
 
 .template-copy {

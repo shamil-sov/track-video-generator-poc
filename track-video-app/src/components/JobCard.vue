@@ -9,9 +9,9 @@
   >
     <div class="job-media">
       <v-img
-        v-if="props.job.track?.pictureUrl"
-        :src="props.job.track.pictureUrl"
-        :alt="`${title} cover`"
+        v-if="previewImage"
+        :src="previewImage"
+        :alt="`${title} video preview`"
         cover
         class="job-cover"
       />
@@ -82,7 +82,7 @@
           <video
             v-if="props.job.videoUrl"
             :src="props.job.videoUrl"
-            :poster="props.job.track?.pictureUrl || undefined"
+            :poster="previewImage || undefined"
             controls
             preload="metadata"
             playsinline
@@ -92,8 +92,8 @@
           </video>
           <div v-else class="details-placeholder">
             <v-img
-              v-if="props.job.track?.pictureUrl"
-              :src="props.job.track.pictureUrl"
+              v-if="previewImage"
+              :src="previewImage"
               cover
               class="details-placeholder__cover"
             />
@@ -231,6 +231,7 @@ const props = defineProps<{
 
 const detailsOpen = ref(false)
 const title = computed(() => props.job.track?.name || `Track ${props.job.postId.slice(0, 8)}`)
+const previewImage = computed(() => props.job.thumbnailUrl || props.job.track?.pictureUrl || null)
 const placeholderText = computed(() => {
   if (props.job.status === 'queued') {
     return 'Waiting for a renderer'
