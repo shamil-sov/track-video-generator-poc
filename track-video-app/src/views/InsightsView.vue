@@ -512,13 +512,12 @@ onBeforeUnmount(stopPolling)
 
 .recent-list {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 28px;
+  grid-template-columns: 1fr;
 }
 
 .recent-row {
   display: grid;
-  grid-template-columns: 180px minmax(80px, 1fr) 58px;
+  grid-template-columns: 240px minmax(120px, 1fr) 68px;
   gap: 12px;
   align-items: center;
   min-width: 0;
@@ -651,9 +650,6 @@ td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .recent-list {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 620px) {
