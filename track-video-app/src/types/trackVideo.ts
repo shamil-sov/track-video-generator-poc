@@ -1,21 +1,5 @@
 export const VIDEO_TEMPLATES = [
   {
-    value: 'orbit',
-    label: 'Orbit',
-    shortLabel: 'Orbit',
-    description: 'A circular spectrum that breathes around the cover.',
-    icon: 'mdi-orbit',
-    accent: '#d7ff4f',
-  },
-  {
-    value: 'prism-spectrum',
-    label: 'Prism Spectrum',
-    shortLabel: 'Prism',
-    description: 'A sharp, colorful spectrum with an editorial feel.',
-    icon: 'mdi-prism',
-    accent: '#ff5fd2',
-  },
-  {
     value: '3d-style',
     label: '3D Style',
     shortLabel: '3D Style',
@@ -30,6 +14,22 @@ export const VIDEO_TEMPLATES = [
     description: 'A spinning record with a radial spectrum and moving tonearm.',
     icon: 'mdi-album',
     accent: '#ffac5f',
+  },
+  {
+    value: 'orbit',
+    label: 'Orbit',
+    shortLabel: 'Orbit',
+    description: 'A circular spectrum that breathes around the cover.',
+    icon: 'mdi-orbit',
+    accent: '#d7ff4f',
+  },
+  {
+    value: 'prism-spectrum',
+    label: 'Prism Spectrum',
+    shortLabel: 'Prism',
+    description: 'A sharp, colorful spectrum with an editorial feel.',
+    icon: 'mdi-prism',
+    accent: '#ff5fd2',
   },
   {
     value: 'music-visualizer',
