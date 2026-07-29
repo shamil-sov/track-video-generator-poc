@@ -13,12 +13,11 @@
       :aria-checked="model === template.value"
       @click="model = template.value"
     >
-      <span class="template-preview" aria-hidden="true">
-        <span class="template-preview__cover">
-          <v-icon icon="mdi-music-note" size="20" />
-        </span>
-        <span class="template-preview__effect"></span>
-      </span>
+      <img
+        :src="templateImages[template.value]"
+        :alt="`${template.label} video example`"
+        class="template-preview"
+      >
 
       <span class="template-copy">
         <span class="template-name">{{ template.label }}</span>
@@ -36,9 +35,18 @@
 </template>
 
 <script setup lang="ts">
+import orbitThumbnail from '@/assets/templates/orbit.jpg'
+import prismThumbnail from '@/assets/templates/prism-spectrum.jpg'
+import threeDimensionalThumbnail from '@/assets/templates/3d-style.jpg'
 import { VIDEO_TEMPLATES, type TrackVideoTemplate } from '@/types/trackVideo'
 
 const model = defineModel<TrackVideoTemplate>({ required: true })
+
+const templateImages: Record<TrackVideoTemplate, string> = {
+  orbit: orbitThumbnail,
+  'prism-spectrum': prismThumbnail,
+  '3d-style': threeDimensionalThumbnail,
+}
 </script>
 
 <style scoped>
@@ -51,12 +59,12 @@ const model = defineModel<TrackVideoTemplate>({ required: true })
 .template-card {
   position: relative;
   display: grid;
-  grid-template-columns: 82px minmax(0, 1fr) 20px;
+  grid-template-columns: 90px minmax(0, 1fr) 20px;
   gap: 14px;
   align-items: center;
   min-width: 0;
-  min-height: 112px;
-  padding: 14px;
+  min-height: 178px;
+  padding: 12px;
   color: rgb(var(--v-theme-on-surface));
   text-align: left;
   background: rgba(var(--v-theme-surface), 0.72);
@@ -81,71 +89,13 @@ const model = defineModel<TrackVideoTemplate>({ required: true })
 }
 
 .template-preview {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 82px;
-  aspect-ratio: 1;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at 50% 45%, #2e3340 0 25%, #121418 62%),
-    #111318;
+  display: block;
+  width: 90px;
+  aspect-ratio: 9 / 15;
+  object-fit: cover;
+  object-position: center;
   border-radius: 14px;
-}
-
-.template-preview__cover {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  aspect-ratio: 1;
-  color: #f6f7f4;
-  background: linear-gradient(145deg, #343945, #171a21);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.45);
-}
-
-.template-preview__effect {
-  position: absolute;
-  inset: 0;
-}
-
-.template-card--orbit .template-preview__effect {
-  inset: 15px;
-  border: 4px dotted #d7ff4f;
-  border-radius: 50%;
-  filter: drop-shadow(0 0 5px rgba(215, 255, 79, 0.72));
-  animation: orbit-spin 9s linear infinite;
-}
-
-.template-card--prism-spectrum .template-preview {
-  background:
-    linear-gradient(135deg, rgba(255, 95, 210, 0.18), transparent 52%),
-    #111318;
-}
-
-.template-card--prism-spectrum .template-preview__effect {
-  background:
-    linear-gradient(90deg, transparent 9%, #ff5fd2 10% 12%, transparent 13% 20%, #a87cff 21% 24%, transparent 25% 34%, #68e3ff 35% 38%, transparent 39% 48%, #f8ff68 49% 52%, transparent 53% 62%, #ff8d5f 63% 66%, transparent 67% 100%);
-  clip-path: polygon(0 82%, 0 64%, 9% 48%, 16% 68%, 24% 24%, 32% 74%, 41% 37%, 49% 79%, 58% 20%, 67% 69%, 75% 43%, 84% 78%, 91% 54%, 100% 67%, 100% 84%);
-  filter: drop-shadow(0 0 4px rgba(255, 95, 210, 0.5));
-}
-
-.template-card--3d-style .template-preview__effect {
-  inset: -22px -8px;
-  background:
-    repeating-radial-gradient(
-      ellipse at 25% 42%,
-      transparent 0 8px,
-      rgba(127, 140, 255, 0.88) 10px 12px,
-      rgba(255, 95, 210, 0.4) 14px,
-      transparent 17px 23px
-    );
-  transform: rotate(-18deg) scale(1.2);
-  filter: blur(0.7px) drop-shadow(0 0 6px rgba(127, 140, 255, 0.65));
-  animation: silk-shift 7s ease-in-out infinite alternate;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
 }
 
 .template-copy {
@@ -168,18 +118,6 @@ const model = defineModel<TrackVideoTemplate>({ required: true })
 
 .template-check {
   color: rgb(var(--v-theme-primary));
-}
-
-@keyframes orbit-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes silk-shift {
-  to {
-    transform: rotate(18deg) scale(1.35);
-  }
 }
 
 @media (max-width: 1000px) {
