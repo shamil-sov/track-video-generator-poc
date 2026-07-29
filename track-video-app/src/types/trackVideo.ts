@@ -9,7 +9,7 @@ export const VIDEO_TEMPLATES = [
   },
   {
     value: 'vinyl-orbit',
-    label: 'Vinyl Orbit',
+    label: 'Vinyl',
     shortLabel: 'Vinyl',
     description: 'A spinning record with a radial spectrum and moving tonearm.',
     icon: 'mdi-album',
@@ -25,7 +25,7 @@ export const VIDEO_TEMPLATES = [
   },
   {
     value: 'prism-spectrum',
-    label: 'Prism Spectrum',
+    label: 'Prism',
     shortLabel: 'Prism',
     description: 'A sharp, colorful spectrum with an editorial feel.',
     icon: 'mdi-prism',
@@ -33,8 +33,8 @@ export const VIDEO_TEMPLATES = [
   },
   {
     value: 'music-visualizer',
-    label: 'Music Visualizer',
-    shortLabel: 'Visualizer',
+    label: 'Classic',
+    shortLabel: 'Classic',
     description: 'A classic audio-reactive visualizer built around the track cover.',
     icon: 'mdi-waveform',
     accent: '#48d7ff',
