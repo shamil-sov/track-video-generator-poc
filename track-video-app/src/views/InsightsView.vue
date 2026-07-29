@@ -123,29 +123,6 @@
             </div>
           </v-card>
 
-          <v-card class="insight-card" rounded="xl" elevation="0">
-            <div class="card-header">
-              <div>
-                <div class="card-kicker">Recent runs</div>
-                <h2>Latest completed videos</h2>
-              </div>
-              <v-icon icon="mdi-chart-timeline-variant-shimmer" color="primary" />
-            </div>
-
-            <div v-if="recentCompleted.length" class="recent-list">
-              <div v-for="job in recentCompleted" :key="job.jobId" class="recent-row">
-                <div class="recent-row__title">
-                  <span class="text-truncate">{{ job.track?.name || job.postId.slice(0, 8) }}</span>
-                  <small>{{ templateLabel(job.template) }}</small>
-                </div>
-                <div class="recent-bar">
-                  <span :style="{ width: `${recentBarWidth(job.totalDurationMs)}%` }"></span>
-                </div>
-                <strong>{{ formatDuration(job.totalDurationMs) }}</strong>
-              </div>
-            </div>
-            <div v-else class="insight-empty">No completed runs to compare yet.</div>
-          </v-card>
         </div>
 
         <v-card class="template-card" rounded="xl" elevation="0">
@@ -192,6 +169,36 @@
           </div>
         </v-card>
 
+        <v-card class="insight-card recent-card" rounded="xl" elevation="0">
+          <div class="card-header">
+            <div>
+              <div class="card-kicker">Recent runs</div>
+              <h2>Latest 50 completed videos</h2>
+            </div>
+            <div class="recent-card__summary">
+              <span>{{ recentCompleted.length }} available</span>
+              <v-icon icon="mdi-chart-timeline-variant-shimmer" color="primary" />
+            </div>
+          </div>
+
+          <div v-if="recentCompleted.length" class="recent-list">
+            <div v-for="job in recentCompleted" :key="job.jobId" class="recent-row">
+              <div class="recent-row__title">
+                <span class="text-truncate">{{ job.track?.name || job.postId.slice(0, 8) }}</span>
+                <small>
+                  {{ templateLabel(job.template) }} ·
+                  {{ formatRelativeDate(job.finishedAt || job.triggeredAt) }}
+                </small>
+              </div>
+              <div class="recent-bar">
+                <span :style="{ width: `${recentBarWidth(job.totalDurationMs)}%` }"></span>
+              </div>
+              <strong>{{ formatDuration(job.totalDurationMs) }}</strong>
+            </div>
+          </div>
+          <div v-else class="insight-empty">No completed runs to compare yet.</div>
+        </v-card>
+
         <div v-if="jobs.length === 0" class="no-data">
           No job data yet. Generate a video first to populate these insights.
         </div>
@@ -233,7 +240,7 @@ const processingTimings = computed(() => summarizeTimings(
   completedJobs.value.map(job => job.processingDurationMs),
 ))
 const templateSummaries = computed(() => summarizeByTemplate(jobs.value))
-const recentCompleted = computed(() => completedJobs.value.slice(0, 8))
+const recentCompleted = computed(() => completedJobs.value.slice(0, 50))
 const recentMaximum = computed(() => Math.max(
   ...recentCompleted.value.map(job => job.totalDurationMs || 0),
   1,
@@ -378,7 +385,7 @@ onBeforeUnmount(stopPolling)
 
 .insights-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 16px;
   margin-top: 16px;
 }
@@ -504,16 +511,19 @@ onBeforeUnmount(stopPolling)
 }
 
 .recent-list {
-  display: flex;
-  flex-direction: column;
-  gap: 13px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 28px;
 }
 
 .recent-row {
   display: grid;
-  grid-template-columns: 130px minmax(80px, 1fr) 58px;
-  gap: 10px;
+  grid-template-columns: 180px minmax(80px, 1fr) 58px;
+  gap: 12px;
   align-items: center;
+  min-width: 0;
+  padding: 11px 0;
+  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
 
 .recent-row__title {
@@ -545,6 +555,21 @@ onBeforeUnmount(stopPolling)
 .recent-row strong {
   font-size: 0.72rem;
   text-align: right;
+}
+
+.recent-card {
+  margin-top: 16px;
+}
+
+.recent-card__summary {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.recent-card__summary span {
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  font-size: 0.72rem;
 }
 
 .insight-empty,
@@ -626,7 +651,7 @@ td {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .insights-grid {
+  .recent-list {
     grid-template-columns: 1fr;
   }
 }
@@ -656,6 +681,10 @@ td {
 
   .recent-row {
     grid-template-columns: 110px minmax(60px, 1fr) 52px;
+  }
+
+  .recent-card__summary span {
+    display: none;
   }
 }
 </style>
