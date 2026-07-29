@@ -511,8 +511,9 @@ onBeforeUnmount(stopPolling)
 }
 
 .recent-list {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
 }
 
 .recent-row {
@@ -521,6 +522,7 @@ onBeforeUnmount(stopPolling)
   gap: 12px;
   align-items: center;
   min-width: 0;
+  width: 100%;
   padding: 11px 0;
   border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.06);
 }
