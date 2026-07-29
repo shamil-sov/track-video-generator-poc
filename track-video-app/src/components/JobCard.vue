@@ -52,7 +52,7 @@
 
       <div class="job-timings">
         <div>
-          <span class="job-timing__label">How long did it take?</span>
+          <span class="job-timing__label">Generated in</span>
           <strong>{{ formatDuration(props.job.totalDurationMs) }}</strong>
         </div>
         <v-icon icon="mdi-chevron-right" size="20" />
