@@ -3,10 +3,7 @@ import { VIDEO_TEMPLATES } from '@/types/trackVideo'
 
 export interface TimingSummary {
   average: number | null
-  median: number | null
   p95: number | null
-  minimum: number | null
-  maximum: number | null
 }
 
 export interface TemplateSummary {
@@ -14,11 +11,8 @@ export interface TemplateSummary {
   label: string
   total: number
   completed: number
-  failed: number
   averageTotalMs: number | null
-  medianTotalMs: number | null
   p95TotalMs: number | null
-  averageProcessingMs: number | null
 }
 
 function percentile(values: number[], percentileValue: number): number | null {
@@ -37,19 +31,13 @@ export function summarizeTimings(values: Array<number | null>): TimingSummary {
   if (available.length === 0) {
     return {
       average: null,
-      median: null,
       p95: null,
-      minimum: null,
-      maximum: null,
     }
   }
 
   return {
     average: available.reduce((sum, value) => sum + value, 0) / available.length,
-    median: percentile(available, 50),
     p95: percentile(available, 95),
-    minimum: Math.min(...available),
-    maximum: Math.max(...available),
   }
 }
 
@@ -58,18 +46,14 @@ export function summarizeByTemplate(jobs: TrackVideoJob[]): TemplateSummary[] {
     const matchingJobs = jobs.filter(job => job.template === template.value)
     const completedJobs = matchingJobs.filter(job => job.status === 'completed')
     const total = summarizeTimings(completedJobs.map(job => job.totalDurationMs))
-    const processing = summarizeTimings(completedJobs.map(job => job.processingDurationMs))
 
     return {
       template: template.value,
       label: template.label,
       total: matchingJobs.length,
       completed: completedJobs.length,
-      failed: matchingJobs.filter(job => job.status === 'failed').length,
       averageTotalMs: total.average,
-      medianTotalMs: total.median,
       p95TotalMs: total.p95,
-      averageProcessingMs: processing.average,
     }
   })
 }

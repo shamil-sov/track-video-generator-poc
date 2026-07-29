@@ -36,7 +36,7 @@
 
       <template v-if="loading">
         <div class="metric-grid">
-          <v-skeleton-loader v-for="index in 4" :key="index" type="article" />
+          <v-skeleton-loader v-for="index in 2" :key="index" type="article" />
         </div>
       </template>
 
@@ -48,19 +48,9 @@
             <span class="metric-note">triggered → finished</span>
           </v-card>
           <v-card class="metric-card" rounded="xl" elevation="0">
-            <span class="metric-label">Median</span>
-            <strong>{{ formatDuration(totalTimings.median) }}</strong>
-            <span class="metric-note">50th percentile</span>
-          </v-card>
-          <v-card class="metric-card" rounded="xl" elevation="0">
             <span class="metric-label">P95</span>
             <strong>{{ formatDuration(totalTimings.p95) }}</strong>
             <span class="metric-note">95% finish within this time</span>
-          </v-card>
-          <v-card class="metric-card" rounded="xl" elevation="0">
-            <span class="metric-label">Completion rate</span>
-            <strong>{{ completionRate }}</strong>
-            <span class="metric-note">{{ completedJobs.length }} ready · {{ failedJobs.length }} failed</span>
           </v-card>
         </div>
 
@@ -70,7 +60,7 @@
               <div class="card-kicker">Style comparison</div>
               <h2>Performance by template</h2>
             </div>
-            <span>{{ jobs.length }} total jobs</span>
+            <span>{{ jobs.length }} total videos</span>
           </div>
 
           <div class="table-scroll">
@@ -78,13 +68,10 @@
               <thead>
                 <tr>
                   <th>Style</th>
-                  <th>Jobs</th>
-                  <th>Ready</th>
-                  <th>Failed</th>
+                  <th>Videos</th>
+                  <th>Generated</th>
                   <th>Avg total</th>
-                  <th>Median</th>
                   <th>P95</th>
-                  <th>Avg render</th>
                 </tr>
               </thead>
               <tbody>
@@ -106,11 +93,8 @@
                   </td>
                   <td>{{ summary.total }}</td>
                   <td>{{ summary.completed }}</td>
-                  <td :class="{ 'text-error': summary.failed > 0 }">{{ summary.failed }}</td>
                   <td>{{ formatDuration(summary.averageTotalMs) }}</td>
-                  <td>{{ formatDuration(summary.medianTotalMs) }}</td>
                   <td>{{ formatDuration(summary.p95TotalMs) }}</td>
-                  <td>{{ formatDuration(summary.averageProcessingMs) }}</td>
                 </tr>
               </tbody>
             </table>
@@ -187,8 +171,6 @@ const {
 } = useTrackVideoJobs()
 
 const completedJobs = computed(() => jobs.value.filter(job => job.status === 'completed'))
-const failedJobs = computed(() => jobs.value.filter(job => job.status === 'failed'))
-const terminalJobs = computed(() => [...completedJobs.value, ...failedJobs.value])
 
 const totalTimings = computed(() => summarizeTimings(
   completedJobs.value.map(job => job.totalDurationMs),
@@ -199,14 +181,6 @@ const recentMaximum = computed(() => Math.max(
   ...recentCompleted.value.map(job => job.totalDurationMs || 0),
   1,
 ))
-
-const completionRate = computed(() => {
-  if (terminalJobs.value.length === 0) {
-    return '—'
-  }
-
-  return `${Math.round((completedJobs.value.length / terminalJobs.value.length) * 100)}%`
-})
 
 function recentBarWidth(value: number | null): number {
   if (value === null) {
@@ -274,7 +248,7 @@ onBeforeUnmount(stopPolling)
 
 .metric-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
@@ -468,13 +442,6 @@ td {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   border-radius: 8px;
   box-shadow: 0 7px 16px rgba(0, 0, 0, 0.28);
-}
-
-@media (max-width: 950px) {
-  .metric-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
 }
 
 @media (max-width: 620px) {
