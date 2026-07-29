@@ -64,67 +64,6 @@
           </v-card>
         </div>
 
-        <div class="insights-grid">
-          <v-card class="insight-card" rounded="xl" elevation="0">
-            <div class="card-header">
-              <div>
-                <div class="card-kicker">Time composition</div>
-                <h2>Where the time goes</h2>
-              </div>
-              <v-icon icon="mdi-timeline-clock-outline" color="primary" />
-            </div>
-
-            <div class="composition-total">
-              <span>Average total</span>
-              <strong>{{ formatDuration(totalTimings.average) }}</strong>
-            </div>
-
-            <div class="composition-bar">
-              <span
-                class="composition-bar__queue"
-                :style="{ width: `${queueShare}%` }"
-              ></span>
-              <span
-                class="composition-bar__processing"
-                :style="{ width: `${processingShare}%` }"
-              ></span>
-            </div>
-
-            <div class="composition-legend">
-              <div>
-                <span class="legend-dot legend-dot--queue"></span>
-                <div>
-                  <span>Queue</span>
-                  <strong>{{ formatDuration(queueTimings.average) }}</strong>
-                </div>
-              </div>
-              <div>
-                <span class="legend-dot legend-dot--processing"></span>
-                <div>
-                  <span>Rendering</span>
-                  <strong>{{ formatDuration(processingTimings.average) }}</strong>
-                </div>
-              </div>
-            </div>
-
-            <div class="range-strip">
-              <div>
-                <span>Fastest</span>
-                <strong>{{ formatDuration(totalTimings.minimum) }}</strong>
-              </div>
-              <div>
-                <span>Slowest</span>
-                <strong>{{ formatDuration(totalTimings.maximum) }}</strong>
-              </div>
-              <div>
-                <span>Active now</span>
-                <strong>{{ activeJobCount }}</strong>
-              </div>
-            </div>
-          </v-card>
-
-        </div>
-
         <v-card class="template-card" rounded="xl" elevation="0">
           <div class="card-header template-card__header">
             <div>
@@ -234,7 +173,6 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
 
 const {
   jobs,
-  activeJobCount,
   loading,
   refreshing,
   error,
@@ -251,12 +189,6 @@ const terminalJobs = computed(() => [...completedJobs.value, ...failedJobs.value
 const totalTimings = computed(() => summarizeTimings(
   completedJobs.value.map(job => job.totalDurationMs),
 ))
-const queueTimings = computed(() => summarizeTimings(
-  completedJobs.value.map(job => job.queueDurationMs),
-))
-const processingTimings = computed(() => summarizeTimings(
-  completedJobs.value.map(job => job.processingDurationMs),
-))
 const templateSummaries = computed(() => summarizeByTemplate(jobs.value))
 const recentCompleted = computed(() => completedJobs.value.slice(0, 50))
 const recentMaximum = computed(() => Math.max(
@@ -270,20 +202,6 @@ const completionRate = computed(() => {
   }
 
   return `${Math.round((completedJobs.value.length / terminalJobs.value.length) * 100)}%`
-})
-
-const queueShare = computed(() => {
-  if (!totalTimings.value.average || !queueTimings.value.average) {
-    return 0
-  }
-  return Math.min(100, (queueTimings.value.average / totalTimings.value.average) * 100)
-})
-
-const processingShare = computed(() => {
-  if (!totalTimings.value.average || !processingTimings.value.average) {
-    return 0
-  }
-  return Math.min(100 - queueShare.value, (processingTimings.value.average / totalTimings.value.average) * 100)
 })
 
 function recentBarWidth(value: number | null): number {
@@ -401,13 +319,6 @@ onBeforeUnmount(stopPolling)
   font-size: 0.68rem;
 }
 
-.insights-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
-  margin-top: 16px;
-}
-
 .insight-card,
 .template-card {
   padding: 24px;
@@ -425,107 +336,6 @@ onBeforeUnmount(stopPolling)
   margin: 0;
   font-size: 1.35rem;
   letter-spacing: -0.04em;
-}
-
-.composition-total {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.composition-total span {
-  color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 0.76rem;
-}
-
-.composition-total strong {
-  font-size: 1.3rem;
-}
-
-.composition-bar {
-  display: flex;
-  height: 14px;
-  margin: 13px 0 18px;
-  overflow: hidden;
-  background: rgba(var(--v-theme-on-surface), 0.07);
-  border-radius: 99px;
-}
-
-.composition-bar span {
-  display: block;
-  min-width: 0;
-}
-
-.composition-bar__queue {
-  background: #d7ff4f;
-}
-
-.composition-bar__processing {
-  background: #7f8cff;
-}
-
-.composition-legend {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.composition-legend > div {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-
-.composition-legend > div > div {
-  display: flex;
-  flex-direction: column;
-}
-
-.composition-legend span:not(.legend-dot) {
-  color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 0.7rem;
-}
-
-.composition-legend strong {
-  font-size: 0.86rem;
-}
-
-.legend-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-}
-
-.legend-dot--queue {
-  background: #d7ff4f;
-}
-
-.legend-dot--processing {
-  background: #7f8cff;
-}
-
-.range-strip {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  margin-top: 28px;
-  padding-top: 18px;
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-}
-
-.range-strip div {
-  display: flex;
-  flex-direction: column;
-}
-
-.range-strip span {
-  color: rgba(var(--v-theme-on-surface), 0.47);
-  font-size: 0.68rem;
-}
-
-.range-strip strong {
-  margin-top: 3px;
-  font-size: 0.9rem;
 }
 
 .recent-list {
