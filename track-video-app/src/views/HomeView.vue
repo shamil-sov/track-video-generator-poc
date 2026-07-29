@@ -540,7 +540,7 @@ onBeforeUnmount(stopPolling)
 .jobs-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
+  gap: 8px;
 }
 
 .job-skeleton {
