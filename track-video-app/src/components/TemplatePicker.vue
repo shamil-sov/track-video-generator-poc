@@ -13,11 +13,17 @@
       :aria-checked="model === template.value"
       @click="model = template.value"
     >
-      <img
-        :src="templateImages[template.value]"
-        :alt="`${template.label} video example`"
+      <video
+        :src="templateVideos[template.value]"
+        :poster="templateImages[template.value]"
+        :aria-label="`${template.label} video example`"
         class="template-preview"
-      >
+        autoplay
+        loop
+        muted
+        playsinline
+        preload="metadata"
+      ></video>
 
       <span class="template-copy">
         <span class="template-name">{{ template.label }}</span>
@@ -36,8 +42,11 @@
 
 <script setup lang="ts">
 import orbitThumbnail from '@/assets/templates/orbit.jpg'
+import orbitVideo from '@/assets/templates/orbit-preview.mp4'
 import prismThumbnail from '@/assets/templates/prism-spectrum.jpg'
+import prismVideo from '@/assets/templates/prism-spectrum-preview.mp4'
 import threeDimensionalThumbnail from '@/assets/templates/3d-style.jpg'
+import threeDimensionalVideo from '@/assets/templates/3d-style-preview.mp4'
 import { VIDEO_TEMPLATES, type TrackVideoTemplate } from '@/types/trackVideo'
 
 const model = defineModel<TrackVideoTemplate>({ required: true })
@@ -46,6 +55,12 @@ const templateImages: Record<TrackVideoTemplate, string> = {
   orbit: orbitThumbnail,
   'prism-spectrum': prismThumbnail,
   '3d-style': threeDimensionalThumbnail,
+}
+
+const templateVideos: Record<TrackVideoTemplate, string> = {
+  orbit: orbitVideo,
+  'prism-spectrum': prismVideo,
+  '3d-style': threeDimensionalVideo,
 }
 </script>
 
