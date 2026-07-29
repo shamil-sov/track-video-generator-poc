@@ -75,19 +75,19 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
 <style scoped>
 .template-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
 .template-card {
   position: relative;
   display: grid;
-  grid-template-columns: 90px minmax(0, 1fr) 20px;
-  gap: 14px;
+  grid-template-columns: 72px minmax(0, 1fr) 18px;
+  gap: 10px;
   align-items: center;
   min-width: 0;
-  min-height: 178px;
-  padding: 12px;
+  min-height: 150px;
+  padding: 10px;
   color: rgb(var(--v-theme-on-surface));
   text-align: left;
   background: rgba(var(--v-theme-surface), 0.72);
@@ -113,7 +113,7 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
 
 .template-preview {
   display: block;
-  width: 90px;
+  width: 72px;
   aspect-ratio: 9 / 15;
   object-fit: cover;
   object-position: center;
@@ -129,14 +129,14 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
 
 .template-name {
   margin-bottom: 5px;
-  font-size: 0.92rem;
+  font-size: 0.84rem;
   font-weight: 750;
 }
 
 .template-description {
   color: rgba(var(--v-theme-on-surface), 0.58);
-  font-size: 0.76rem;
-  line-height: 1.4;
+  font-size: 0.68rem;
+  line-height: 1.35;
 }
 
 .template-check {
