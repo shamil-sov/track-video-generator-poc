@@ -20,10 +20,18 @@
       </div>
 
       <div class="job-media__shade"></div>
-      <StatusChip :status="props.job.status" class="job-status" />
-      <v-chip size="small" variant="flat" class="job-template">
-        {{ templateLabel(props.job.template) }}
-      </v-chip>
+      <div class="job-labels">
+        <StatusChip :status="props.job.status" />
+        <v-chip
+          size="small"
+          variant="tonal"
+          color="secondary"
+          prepend-icon="mdi-palette-outline"
+          class="job-style"
+        >
+          {{ templateLabel(props.job.template) }}
+        </v-chip>
+      </div>
 
       <div v-if="props.job.status === 'processing'" class="job-rendering">
         <v-progress-circular indeterminate color="white" width="3" size="42" />
@@ -301,18 +309,19 @@ const placeholderText = computed(() => {
   background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), transparent 45%, rgba(0, 0, 0, 0.48));
 }
 
-.job-status {
+.job-labels {
   position: absolute;
   top: 12px;
   left: 12px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  max-width: calc(100% - 24px);
 }
 
-.job-template {
-  position: absolute;
-  right: 12px;
-  bottom: 12px;
+.job-style {
   font-weight: 700;
-  background: rgba(15, 16, 20, 0.82) !important;
+  background: rgba(75, 79, 126, 0.76) !important;
   color: white !important;
   backdrop-filter: blur(12px);
 }
