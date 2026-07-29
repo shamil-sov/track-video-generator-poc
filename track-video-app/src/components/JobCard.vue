@@ -21,11 +21,12 @@
 
       <div class="job-media__shade"></div>
       <div class="job-labels">
-        <StatusChip :status="props.job.status" size="x-small" />
+        <StatusChip :status="props.job.status" />
         <v-chip
-          size="x-small"
+          size="small"
           variant="tonal"
           color="secondary"
+          prepend-icon="mdi-palette-outline"
           class="job-style"
         >
           {{ templateLabel(props.job.template) }}
@@ -253,10 +254,6 @@ const placeholderText = computed(() => {
 
 <style scoped>
 .job-card {
-  display: grid;
-  grid-template-columns: 144px minmax(0, 1fr);
-  height: 82px;
-  min-height: 82px;
   overflow: hidden;
   background: rgba(var(--v-theme-surface), 0.82);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.09);
@@ -277,8 +274,7 @@ const placeholderText = computed(() => {
 
 .job-media {
   position: relative;
-  height: 82px;
-  min-height: 0;
+  aspect-ratio: 16 / 10;
   overflow: hidden;
   background: #17191f;
 }
@@ -286,7 +282,6 @@ const placeholderText = computed(() => {
 .job-cover {
   width: 100%;
   height: 100%;
-  aspect-ratio: auto;
   transition: transform 300ms ease;
 }
 
@@ -312,12 +307,12 @@ const placeholderText = computed(() => {
 
 .job-labels {
   position: absolute;
-  top: 6px;
-  left: 6px;
+  top: 12px;
+  left: 12px;
   display: flex;
-  gap: 4px;
+  gap: 8px;
   flex-wrap: wrap;
-  max-width: calc(100% - 12px);
+  max-width: calc(100% - 24px);
 }
 
 .job-style {
@@ -337,8 +332,8 @@ const placeholderText = computed(() => {
 }
 
 .job-play {
-  width: 36px;
-  height: 36px;
+  width: 54px;
+  height: 54px;
   margin: auto;
   padding-left: 3px;
   background: rgba(12, 13, 16, 0.62);
@@ -348,25 +343,18 @@ const placeholderText = computed(() => {
 }
 
 .job-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 155px;
-  grid-template-rows: auto auto;
-  column-gap: 14px;
-  align-content: center;
-  padding: 10px 14px;
+  padding: 17px;
 }
 
 .job-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-column: 1;
-  grid-row: 1;
   gap: 12px;
   align-items: baseline;
 }
 
 .job-title {
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 780;
   letter-spacing: -0.02em;
 }
@@ -374,16 +362,14 @@ const placeholderText = computed(() => {
 .job-date,
 .job-meta {
   color: rgba(var(--v-theme-on-surface), 0.56);
-  font-size: 0.68rem;
+  font-size: 0.74rem;
 }
 
 .job-meta {
   display: flex;
-  grid-column: 1;
-  grid-row: 2;
   gap: 8px;
   align-items: center;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .job-meta__dot {
@@ -396,13 +382,11 @@ const placeholderText = computed(() => {
 .job-timings {
   display: grid;
   grid-template-columns: 1fr auto;
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  gap: 8px;
-  align-items: center;
-  margin: 0;
-  padding: 4px 0 4px 14px;
-  border-left: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  gap: 12px;
+  align-items: end;
+  margin-top: 15px;
+  padding-top: 13px;
+  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 
 .job-timings > div {
@@ -411,13 +395,13 @@ const placeholderText = computed(() => {
 }
 
 .job-timings strong {
-  font-size: 0.76rem;
+  font-size: 0.82rem;
 }
 
 .job-timing__label {
   margin-bottom: 1px;
   color: rgba(var(--v-theme-on-surface), 0.48);
-  font-size: 0.61rem;
+  font-size: 0.67rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -596,16 +580,6 @@ const placeholderText = computed(() => {
 }
 
 @media (max-width: 760px) {
-  .job-card {
-    grid-template-columns: 128px minmax(0, 1fr);
-  }
-
-  .job-body {
-    grid-template-columns: minmax(0, 1fr) 135px;
-    column-gap: 12px;
-    padding: 10px 12px;
-  }
-
   .details-layout {
     display: block;
     max-height: 80vh;
@@ -622,39 +596,6 @@ const placeholderText = computed(() => {
 
   .performance-grid {
     grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 620px) {
-  .job-card {
-    grid-template-columns: 108px minmax(0, 1fr);
-    height: 88px;
-    min-height: 88px;
-  }
-
-  .job-media {
-    height: 88px;
-    min-height: 0;
-  }
-
-  .job-body {
-    display: block;
-    padding: 9px 10px;
-  }
-
-  .job-heading {
-    display: block;
-  }
-
-  .job-date {
-    display: none;
-  }
-
-  .job-timings {
-    margin-top: 6px;
-    padding: 6px 0 0;
-    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-    border-left: 0;
   }
 }
 </style>

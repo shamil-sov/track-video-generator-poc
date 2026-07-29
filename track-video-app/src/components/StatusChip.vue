@@ -3,7 +3,7 @@
     :color="appearance.color"
     :prepend-icon="appearance.icon"
     :variant="props.status === 'completed' ? 'flat' : 'tonal'"
-    :size="props.size ?? 'small'"
+    size="small"
     class="status-chip"
   >
     {{ appearance.label }}
@@ -16,7 +16,6 @@ import type { TrackVideoJobStatus } from '@/types/trackVideo'
 
 const props = defineProps<{
   status: TrackVideoJobStatus
-  size?: 'x-small' | 'small'
 }>()
 
 const appearance = computed(() => {
