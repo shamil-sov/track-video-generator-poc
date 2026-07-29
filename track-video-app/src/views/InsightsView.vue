@@ -69,7 +69,6 @@
                 <tr>
                   <th>Style</th>
                   <th>Videos</th>
-                  <th>Generated</th>
                   <th>Avg total</th>
                   <th>P95</th>
                 </tr>
@@ -92,7 +91,6 @@
                     </div>
                   </td>
                   <td>{{ summary.total }}</td>
-                  <td>{{ summary.completed }}</td>
                   <td>{{ formatDuration(summary.averageTotalMs) }}</td>
                   <td>{{ formatDuration(summary.p95TotalMs) }}</td>
                 </tr>

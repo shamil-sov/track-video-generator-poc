@@ -10,7 +10,6 @@ export interface TemplateSummary {
   template: TrackVideoTemplate
   label: string
   total: number
-  completed: number
   averageTotalMs: number | null
   p95TotalMs: number | null
 }
@@ -51,7 +50,6 @@ export function summarizeByTemplate(jobs: TrackVideoJob[]): TemplateSummary[] {
       template: template.value,
       label: template.label,
       total: matchingJobs.length,
-      completed: completedJobs.length,
       averageTotalMs: total.average,
       p95TotalMs: total.p95,
     }
