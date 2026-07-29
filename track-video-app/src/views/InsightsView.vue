@@ -152,8 +152,17 @@
                 <tr v-for="summary in templateSummaries" :key="summary.template">
                   <td>
                     <div class="template-name">
-                      <span :class="`template-swatch template-swatch--${summary.template}`"></span>
-                      {{ summary.label }}
+                      <video
+                        :src="templateVideos[summary.template]"
+                        :aria-label="`${summary.label} video example`"
+                        class="template-performance-preview"
+                        autoplay
+                        loop
+                        muted
+                        playsinline
+                        preload="metadata"
+                      ></video>
+                      <span>{{ summary.label }}</span>
                     </div>
                   </td>
                   <td>{{ summary.total }}</td>
@@ -209,10 +218,19 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
+import orbitVideo from '@/assets/templates/orbit-preview.mp4'
+import prismVideo from '@/assets/templates/prism-spectrum-preview.mp4'
+import threeDimensionalVideo from '@/assets/templates/3d-style-preview.mp4'
 import { useTrackVideoJobs } from '@/composables/useTrackVideoJobs'
-import { templateLabel } from '@/types/trackVideo'
+import { templateLabel, type TrackVideoTemplate } from '@/types/trackVideo'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
 import { summarizeByTemplate, summarizeTimings } from '@/utils/insights'
+
+const templateVideos: Record<TrackVideoTemplate, string> = {
+  orbit: orbitVideo,
+  'prism-spectrum': prismVideo,
+  '3d-style': threeDimensionalVideo,
+}
 
 const {
   jobs,
@@ -620,31 +638,22 @@ td {
 
 .template-name {
   display: flex;
-  gap: 9px;
+  gap: 12px;
   align-items: center;
-  min-width: 145px;
+  min-width: 180px;
   font-weight: 700;
 }
 
-.template-swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-
-.template-swatch--orbit {
-  background: #d7ff4f;
-  box-shadow: 0 0 0 4px rgba(215, 255, 79, 0.12);
-}
-
-.template-swatch--prism-spectrum {
-  background: #ff5fd2;
-  box-shadow: 0 0 0 4px rgba(255, 95, 210, 0.12);
-}
-
-.template-swatch--3d-style {
-  background: #7f8cff;
-  box-shadow: 0 0 0 4px rgba(127, 140, 255, 0.12);
+.template-performance-preview {
+  display: block;
+  width: 42px;
+  height: 64px;
+  object-fit: cover;
+  object-position: center;
+  background: #111217;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 8px;
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.28);
 }
 
 @media (max-width: 950px) {
