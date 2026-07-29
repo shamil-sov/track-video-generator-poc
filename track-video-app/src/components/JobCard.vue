@@ -58,12 +58,8 @@
 
       <div class="job-timings">
         <div>
-          <span class="job-timing__label">Total</span>
+          <span class="job-timing__label">Generation time</span>
           <strong>{{ formatDuration(props.job.totalDurationMs) }}</strong>
-        </div>
-        <div>
-          <span class="job-timing__label">Render</span>
-          <strong>{{ formatDuration(props.job.processingDurationMs) }}</strong>
         </div>
         <v-icon icon="mdi-chevron-right" size="20" />
       </div>
@@ -385,7 +381,7 @@ const placeholderText = computed(() => {
 
 .job-timings {
   display: grid;
-  grid-template-columns: 1fr 1fr auto;
+  grid-template-columns: 1fr auto;
   gap: 12px;
   align-items: end;
   margin-top: 15px;
