@@ -254,8 +254,9 @@ const placeholderText = computed(() => {
 <style scoped>
 .job-card {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  min-height: 96px;
+  grid-template-columns: 144px minmax(0, 1fr);
+  height: 82px;
+  min-height: 82px;
   overflow: hidden;
   background: rgba(var(--v-theme-surface), 0.82);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.09);
@@ -276,7 +277,8 @@ const placeholderText = computed(() => {
 
 .job-media {
   position: relative;
-  min-height: 96px;
+  height: 82px;
+  min-height: 0;
   overflow: hidden;
   background: #17191f;
 }
@@ -284,6 +286,7 @@ const placeholderText = computed(() => {
 .job-cover {
   width: 100%;
   height: 100%;
+  aspect-ratio: auto;
   transition: transform 300ms ease;
 }
 
@@ -594,7 +597,7 @@ const placeholderText = computed(() => {
 
 @media (max-width: 760px) {
   .job-card {
-    grid-template-columns: 150px minmax(0, 1fr);
+    grid-template-columns: 128px minmax(0, 1fr);
   }
 
   .job-body {
@@ -624,12 +627,14 @@ const placeholderText = computed(() => {
 
 @media (max-width: 620px) {
   .job-card {
-    grid-template-columns: 116px minmax(0, 1fr);
-    min-height: 96px;
+    grid-template-columns: 108px minmax(0, 1fr);
+    height: 88px;
+    min-height: 88px;
   }
 
   .job-media {
-    min-height: 96px;
+    height: 88px;
+    min-height: 0;
   }
 
   .job-body {
