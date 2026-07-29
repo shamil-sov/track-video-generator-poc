@@ -255,8 +255,8 @@ const placeholderText = computed(() => {
 <style scoped>
 .job-card {
   display: grid;
-  grid-template-columns: 230px minmax(0, 1fr);
-  min-height: 154px;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: 126px;
   overflow: hidden;
   background: rgba(var(--v-theme-surface), 0.82);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.09);
@@ -277,7 +277,7 @@ const placeholderText = computed(() => {
 
 .job-media {
   position: relative;
-  min-height: 154px;
+  min-height: 126px;
   overflow: hidden;
   background: #17191f;
 }
@@ -310,12 +310,12 @@ const placeholderText = computed(() => {
 
 .job-labels {
   position: absolute;
-  top: 12px;
-  left: 12px;
+  top: 8px;
+  left: 8px;
   display: flex;
-  gap: 8px;
+  gap: 6px;
   flex-wrap: wrap;
-  max-width: calc(100% - 24px);
+  max-width: calc(100% - 16px);
 }
 
 .job-style {
@@ -335,8 +335,8 @@ const placeholderText = computed(() => {
 }
 
 .job-play {
-  width: 54px;
-  height: 54px;
+  width: 44px;
+  height: 44px;
   margin: auto;
   padding-left: 3px;
   background: rgba(12, 13, 16, 0.62);
@@ -347,11 +347,11 @@ const placeholderText = computed(() => {
 
 .job-body {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 180px;
+  grid-template-columns: minmax(0, 1fr) 170px;
   grid-template-rows: auto auto;
-  column-gap: 24px;
+  column-gap: 18px;
   align-content: center;
-  padding: 18px 20px;
+  padding: 14px 18px;
 }
 
 .job-heading {
@@ -399,7 +399,7 @@ const placeholderText = computed(() => {
   gap: 12px;
   align-items: center;
   margin: 0;
-  padding: 8px 0 8px 22px;
+  padding: 6px 0 6px 18px;
   border-left: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 
@@ -595,7 +595,7 @@ const placeholderText = computed(() => {
 
 @media (max-width: 760px) {
   .job-card {
-    grid-template-columns: 180px minmax(0, 1fr);
+    grid-template-columns: 170px minmax(0, 1fr);
   }
 
   .job-body {
