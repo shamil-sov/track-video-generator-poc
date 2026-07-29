@@ -50,15 +50,9 @@
         <div class="job-date">{{ formatRelativeDate(props.job.triggeredAt) }}</div>
       </div>
 
-      <div class="job-meta">
-        <span>{{ props.job.track?.genre || 'Genre unavailable' }}</span>
-        <span class="job-meta__dot"></span>
-        <span>{{ formatTrackDuration(props.job.track?.durationSeconds) }}</span>
-      </div>
-
       <div class="job-timings">
         <div>
-          <span class="job-timing__label">Generation time</span>
+          <span class="job-timing__label">How long did it take?</span>
           <strong>{{ formatDuration(props.job.totalDurationMs) }}</strong>
         </div>
         <v-icon icon="mdi-chevron-right" size="20" />
@@ -229,7 +223,6 @@ import {
   formatDate,
   formatDuration,
   formatRelativeDate,
-  formatTrackDuration,
 } from '@/utils/formatters'
 
 const props = defineProps<{
@@ -359,24 +352,9 @@ const placeholderText = computed(() => {
   letter-spacing: -0.02em;
 }
 
-.job-date,
-.job-meta {
+.job-date {
   color: rgba(var(--v-theme-on-surface), 0.56);
   font-size: 0.74rem;
-}
-
-.job-meta {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 4px;
-}
-
-.job-meta__dot {
-  width: 3px;
-  height: 3px;
-  background: currentColor;
-  border-radius: 50%;
 }
 
 .job-timings {
