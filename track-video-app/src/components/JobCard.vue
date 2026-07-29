@@ -254,6 +254,9 @@ const placeholderText = computed(() => {
 
 <style scoped>
 .job-card {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 1fr);
+  min-height: 154px;
   overflow: hidden;
   background: rgba(var(--v-theme-surface), 0.82);
   border: 1px solid rgba(var(--v-theme-on-surface), 0.09);
@@ -274,7 +277,7 @@ const placeholderText = computed(() => {
 
 .job-media {
   position: relative;
-  aspect-ratio: 16 / 10;
+  min-height: 154px;
   overflow: hidden;
   background: #17191f;
 }
@@ -343,12 +346,19 @@ const placeholderText = computed(() => {
 }
 
 .job-body {
-  padding: 17px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  grid-template-rows: auto auto;
+  column-gap: 24px;
+  align-content: center;
+  padding: 18px 20px;
 }
 
 .job-heading {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
+  grid-column: 1;
+  grid-row: 1;
   gap: 12px;
   align-items: baseline;
 }
@@ -367,6 +377,8 @@ const placeholderText = computed(() => {
 
 .job-meta {
   display: flex;
+  grid-column: 1;
+  grid-row: 2;
   gap: 8px;
   align-items: center;
   margin-top: 4px;
@@ -382,11 +394,13 @@ const placeholderText = computed(() => {
 .job-timings {
   display: grid;
   grid-template-columns: 1fr auto;
+  grid-column: 2;
+  grid-row: 1 / span 2;
   gap: 12px;
-  align-items: end;
-  margin-top: 15px;
-  padding-top: 13px;
-  border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+  align-items: center;
+  margin: 0;
+  padding: 8px 0 8px 22px;
+  border-left: 1px solid rgba(var(--v-theme-on-surface), 0.08);
 }
 
 .job-timings > div {
@@ -580,6 +594,16 @@ const placeholderText = computed(() => {
 }
 
 @media (max-width: 760px) {
+  .job-card {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .job-body {
+    grid-template-columns: minmax(0, 1fr) 150px;
+    column-gap: 16px;
+    padding: 16px;
+  }
+
   .details-layout {
     display: block;
     max-height: 80vh;
@@ -596,6 +620,30 @@ const placeholderText = computed(() => {
 
   .performance-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .job-card {
+    display: block;
+    min-height: 0;
+  }
+
+  .job-media {
+    min-height: 0;
+    aspect-ratio: 16 / 9;
+  }
+
+  .job-body {
+    display: block;
+    padding: 17px;
+  }
+
+  .job-timings {
+    margin-top: 15px;
+    padding: 13px 0 0;
+    border-top: 1px solid rgba(var(--v-theme-on-surface), 0.08);
+    border-left: 0;
   }
 }
 </style>

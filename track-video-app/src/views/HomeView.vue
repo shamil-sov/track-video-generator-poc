@@ -151,7 +151,7 @@
           <v-skeleton-loader
             v-for="index in 6"
             :key="index"
-            type="image, article"
+            type="list-item-avatar-three-line"
             class="job-skeleton"
           />
         </div>
@@ -539,8 +539,8 @@ onBeforeUnmount(stopPolling)
 
 .jobs-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
+  grid-template-columns: 1fr;
+  gap: 12px;
 }
 
 .job-skeleton {
@@ -604,9 +604,6 @@ onBeforeUnmount(stopPolling)
     grid-column: 1 / -1;
   }
 
-  .jobs-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 620px) {
@@ -637,8 +634,7 @@ onBeforeUnmount(stopPolling)
     width: 100%;
   }
 
-  .filters,
-  .jobs-grid {
+  .filters {
     grid-template-columns: 1fr;
   }
 
