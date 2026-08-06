@@ -62,6 +62,42 @@
           <div class="field-label">Video style</div>
           <TemplatePicker v-model="selectedTemplate" />
 
+          <div class="overlay-heading">
+            <div class="field-label">Text overlay <span>Optional</span></div>
+            <span>Up to 40 characters · rendered in uppercase</span>
+          </div>
+          <div class="overlay-options" role="group" aria-label="Text overlay">
+            <button
+              v-for="option in textOverlayOptions"
+              :key="option.value"
+              type="button"
+              class="overlay-option"
+              :class="{ 'overlay-option--selected': selectedTextOverlay === option.value }"
+              :aria-pressed="selectedTextOverlay === option.value"
+              :disabled="submitting"
+              @click="selectedTextOverlay = option.value"
+            >
+              {{ option.label }}
+            </button>
+          </div>
+
+          <v-text-field
+            v-if="selectedTextOverlay === 'custom'"
+            v-model="customTextOverlay"
+            class="custom-overlay-field"
+            label="Custom overlay text"
+            placeholder="Your message"
+            variant="outlined"
+            density="comfortable"
+            color="primary"
+            prepend-inner-icon="mdi-format-text"
+            maxlength="40"
+            counter="40"
+            :error-messages="textOverlayError"
+            :disabled="submitting"
+            autocomplete="off"
+          />
+
           <div class="generator-footer">
             <p>
               This is a public experiment. The submitted track and generated video appear in the shared history below.
@@ -73,7 +109,7 @@
               rounded="lg"
               prepend-icon="mdi-creation"
               :loading="submitting"
-              :disabled="!isValidTrackUrl"
+              :disabled="!isValidTrackUrl || Boolean(textOverlayError)"
             >
               Generate video
             </v-btn>
@@ -221,6 +257,18 @@ const {
 
 const trackUrl = ref('')
 const selectedTemplate = ref<TrackVideoTemplate>('orbit')
+type TextOverlayChoice = 'none' | 'coming-soon' | 'somethings-cooking' | 'out-now' | 'custom'
+
+const textOverlayOptions: ReadonlyArray<{ label: string, value: TextOverlayChoice }> = [
+  { label: 'No overlay', value: 'none' },
+  { label: 'Coming soon', value: 'coming-soon' },
+  { label: "Something's cooking", value: 'somethings-cooking' },
+  { label: 'Out now', value: 'out-now' },
+  { label: 'Custom', value: 'custom' },
+]
+
+const selectedTextOverlay = ref<TextOverlayChoice>('none')
+const customTextOverlay = ref('')
 const urlTouched = ref(false)
 const showSuccess = ref(false)
 const search = ref('')
@@ -280,6 +328,29 @@ function validateTrackUrl(value: string): string | null {
 const rawTrackUrlError = computed(() => validateTrackUrl(trackUrl.value))
 const trackUrlError = computed(() => urlTouched.value ? rawTrackUrlError.value : null)
 const isValidTrackUrl = computed(() => rawTrackUrlError.value === null)
+const textOverlay = computed(() => {
+  if (selectedTextOverlay.value === 'custom') {
+    return customTextOverlay.value.trim() || undefined
+  }
+  if (selectedTextOverlay.value === 'none') {
+    return undefined
+  }
+
+  return textOverlayOptions.find(option => option.value === selectedTextOverlay.value)?.label
+})
+const textOverlayError = computed(() => {
+  if (selectedTextOverlay.value !== 'custom') {
+    return null
+  }
+  if (/\r|\n/.test(customTextOverlay.value)) {
+    return 'Use a single line of text.'
+  }
+  if (customTextOverlay.value.trim().length > 40) {
+    return 'Use no more than 40 characters.'
+  }
+
+  return null
+})
 const completedCount = computed(() => jobs.value.filter(job => job.status === 'completed').length)
 const hasFilters = computed(() => (
   search.value.trim().length > 0
@@ -317,10 +388,12 @@ async function handleSubmit(): Promise<void> {
     return
   }
 
-  const created = await submitJob(trackUrl.value.trim(), selectedTemplate.value)
+  const created = await submitJob(trackUrl.value.trim(), selectedTemplate.value, textOverlay.value)
   if (created) {
     showSuccess.value = true
     trackUrl.value = ''
+    selectedTextOverlay.value = 'none'
+    customTextOverlay.value = ''
     urlTouched.value = false
   }
 }
@@ -488,6 +561,70 @@ onBeforeUnmount(stopPolling)
   letter-spacing: 0.08em;
 }
 
+.field-label span {
+  margin-left: 6px;
+  color: rgba(var(--v-theme-on-surface), 0.35);
+  font-weight: 650;
+}
+
+.overlay-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.overlay-heading > span {
+  color: rgba(var(--v-theme-on-surface), 0.42);
+  font-size: 0.7rem;
+}
+
+.overlay-options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+}
+
+.overlay-option {
+  min-height: 46px;
+  padding: 8px 12px;
+  color: rgba(var(--v-theme-on-surface), 0.66);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: rgba(var(--v-theme-on-surface), 0.025);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
+  border-radius: 12px;
+  transition: 150ms ease;
+}
+
+.overlay-option:hover:not(:disabled) {
+  color: rgb(var(--v-theme-on-surface));
+  border-color: rgba(var(--v-theme-primary), 0.48);
+}
+
+.overlay-option--selected {
+  color: rgb(var(--v-theme-primary));
+  background: rgba(var(--v-theme-primary), 0.09);
+  border-color: rgba(var(--v-theme-primary), 0.7);
+  box-shadow: inset 0 0 0 1px rgba(var(--v-theme-primary), 0.18);
+}
+
+.overlay-option:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
+
+.overlay-option:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.custom-overlay-field {
+  margin-top: 12px;
+}
+
 .generator-footer {
   display: flex;
   gap: 28px;
@@ -607,6 +744,10 @@ onBeforeUnmount(stopPolling)
   .jobs-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .overlay-options {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 620px) {
@@ -640,6 +781,15 @@ onBeforeUnmount(stopPolling)
   .filters,
   .jobs-grid {
     grid-template-columns: 1fr;
+  }
+
+  .overlay-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .overlay-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .filters > :first-child {

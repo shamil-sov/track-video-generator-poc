@@ -32,13 +32,19 @@ async function parseResponse<T>(response: Response): Promise<T> {
 export async function createJob(
   trackUrl: string,
   template: TrackVideoTemplate,
+  textOverlay?: string,
 ): Promise<CreateTrackVideoJobResult> {
+  const normalizedTextOverlay = textOverlay?.trim()
   const response = await fetch(JOBS_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ trackUrl, template }),
+    body: JSON.stringify({
+      trackUrl,
+      template,
+      ...(normalizedTextOverlay ? { textOverlay: normalizedTextOverlay } : {}),
+    }),
   })
 
   return parseResponse<CreateTrackVideoJobResult>(response)

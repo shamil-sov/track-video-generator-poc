@@ -41,12 +41,13 @@ async function fetchJobs(showLoader = false): Promise<void> {
 async function submitJob(
   trackUrl: string,
   template: TrackVideoTemplate,
+  textOverlay?: string,
 ): Promise<boolean> {
   submitting.value = true
   error.value = null
 
   try {
-    await createJob(trackUrl, template)
+    await createJob(trackUrl, template, textOverlay)
     await fetchJobs()
     syncPolling()
     return true
