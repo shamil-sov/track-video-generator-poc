@@ -201,10 +201,10 @@ function showNextImage(): void {
 
 .selected-preview {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: 190px minmax(0, 1fr);
+  gap: 24px;
   align-items: center;
-  padding: 14px;
+  padding: 16px;
   background:
     radial-gradient(circle at 0 0, rgba(127, 140, 255, 0.16), transparent 48%),
     rgba(var(--v-theme-on-surface), 0.035);
@@ -427,7 +427,7 @@ function showNextImage(): void {
 
 @media (max-width: 620px) {
   .selected-preview {
-    grid-template-columns: 110px minmax(0, 1fr);
+    grid-template-columns: 125px minmax(0, 1fr);
   }
 
   .catalogue-heading {
