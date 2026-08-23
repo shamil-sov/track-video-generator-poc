@@ -11,17 +11,13 @@ A lightweight GitHub Pages client for the experimental BandLab Track Video Gener
 - plays completed MP4s and exposes full job metadata;
 - summarizes end-to-end performance separately for both workflows.
 
-The deployed client uses these UAT APIs by default:
+The deployed client uses the existing UAT API Gateway for both workflows:
 
 ```text
-# Cover-video jobs
 https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3
-
-# AI-image catalogues and jobs
-https://test.aws.bandlab.com/api/v1.3
 ```
 
-Override them locally with `VITE_API_BASE_URL` and `VITE_AI_IMAGE_API_BASE_URL`.
+Override it locally with `VITE_API_BASE_URL`.
 
 ## Local development
 

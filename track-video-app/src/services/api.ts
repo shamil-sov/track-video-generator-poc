@@ -21,12 +21,7 @@ export const API_BASE_URL = (
 
 const JOBS_URL = `${API_BASE_URL}/track-video-generator/jobs`
 
-export const AI_IMAGE_API_BASE_URL = (
-  import.meta.env.VITE_AI_IMAGE_API_BASE_URL
-  || 'https://test.aws.bandlab.com/api/v1.3'
-).replace(/\/$/, '')
-
-const AI_IMAGE_API_URL = `${AI_IMAGE_API_BASE_URL}/track-video-generator`
+const AI_IMAGE_API_URL = `${API_BASE_URL}/track-video-generator`
 const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
 const AI_IMAGE_TEMPLATES_URL = `${AI_IMAGE_API_URL}/ai-image-video-templates`
 const AI_IMAGE_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-video-jobs`
