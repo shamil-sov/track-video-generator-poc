@@ -21,16 +21,27 @@
             :variant="route.name === 'home' ? 'tonal' : 'text'"
             rounded="lg"
             prepend-icon="mdi-movie-open-outline"
+            aria-label="Cover videos"
           >
-            Videos
+            Cover videos
+          </v-btn>
+          <v-btn
+            :to="{ name: 'ai-image-videos' }"
+            :variant="route.name === 'ai-image-videos' ? 'tonal' : 'text'"
+            rounded="lg"
+            prepend-icon="mdi-image-sparkles-outline"
+            aria-label="AI-image videos"
+          >
+            AI-image videos
           </v-btn>
           <v-btn
             :to="{ name: 'insights' }"
             :variant="route.name === 'insights' ? 'tonal' : 'text'"
             rounded="lg"
             prepend-icon="mdi-chart-box-outline"
+            aria-label="Cover-video insights"
           >
-            Insights
+            Cover insights
           </v-btn>
         </nav>
 
@@ -48,14 +59,24 @@
     <footer class="app-footer">
       <v-container class="page-container app-footer__inner">
         <span>Track Video Generator · experimental client</span>
-        <a
-          href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3"
-          target="_blank"
-          rel="noopener"
-        >
-          UAT API Gateway
-          <v-icon icon="mdi-open-in-new" size="13" />
-        </a>
+        <div class="app-footer__links">
+          <a
+            href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3"
+            target="_blank"
+            rel="noopener"
+          >
+            Cover-video API
+            <v-icon icon="mdi-open-in-new" size="13" />
+          </a>
+          <a
+            href="https://test.aws.bandlab.com/api/v1.3"
+            target="_blank"
+            rel="noopener"
+          >
+            AI-image API
+            <v-icon icon="mdi-open-in-new" size="13" />
+          </a>
+        </div>
       </v-container>
     </footer>
   </v-app>
@@ -81,7 +102,7 @@ const route = useRoute()
 
 .app-bar__inner {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(150px, 1fr) auto minmax(80px, 1fr);
   gap: 20px;
   align-items: center;
   height: 100%;
@@ -190,6 +211,21 @@ const route = useRoute()
   color: #d7ff4f;
 }
 
+.app-footer__links {
+  display: flex;
+  gap: 16px;
+}
+
+@media (max-width: 820px) {
+  .app-nav :deep(.v-btn__prepend) {
+    margin-inline-end: 0;
+  }
+
+  .app-nav :deep(.v-btn__content) {
+    display: none;
+  }
+}
+
 @media (max-width: 640px) {
   .app-bar__inner {
     grid-template-columns: auto 1fr;
@@ -197,14 +233,6 @@ const route = useRoute()
 
   .app-nav {
     justify-self: end;
-  }
-
-  .app-nav :deep(.v-btn__prepend) {
-    margin-inline-end: 0;
-  }
-
-  .app-nav :deep(.v-btn__content) {
-    display: none;
   }
 
   .environment-chip {
@@ -215,6 +243,10 @@ const route = useRoute()
     gap: 12px;
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .app-footer__links {
+    flex-wrap: wrap;
   }
 }
 </style>

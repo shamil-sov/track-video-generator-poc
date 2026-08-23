@@ -99,7 +99,7 @@ export interface ApiError {
   errorData?: unknown
 }
 
-export function isActiveJob(job: TrackVideoJob): boolean {
+export function isActiveJob(job: { status: TrackVideoJobStatus }): boolean {
   return job.status === 'queued' || job.status === 'processing'
 }
 
