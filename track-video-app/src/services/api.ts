@@ -25,6 +25,15 @@ const AI_IMAGE_API_URL = `${API_BASE_URL}/track-video-generator`
 const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
 const AI_IMAGE_TEMPLATES_URL = `${AI_IMAGE_API_URL}/ai-image-video-templates`
 const AI_IMAGE_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-video-jobs`
+const HIDDEN_AI_IMAGE_VISUAL_STYLE_IDS = new Set([
+  'moire-rotor-ballet',
+  'schlieren-flow-study',
+  'chladni-resonance-plate',
+  'ferrofluid-reversal',
+  'flip-disc-kinetic-mural',
+  'radiographic-secret',
+  'sandglass-fable',
+])
 
 function shuffled<T>(values: readonly T[]): T[] {
   const result = [...values]
@@ -98,10 +107,12 @@ export async function getAiImageVisualStyles(): Promise<AiImageVisualStyle[]> {
   const response = await fetch(AI_IMAGE_STYLES_URL)
   const styles = (await parseResponse<AiImageCatalogue<AiImageVisualStyle>>(response)).data
 
-  return styles.map(style => ({
-    ...style,
-    exampleImageUrls: shuffled(style.exampleImageUrls),
-  }))
+  return styles
+    .filter(style => !HIDDEN_AI_IMAGE_VISUAL_STYLE_IDS.has(style.id))
+    .map(style => ({
+      ...style,
+      exampleImageUrls: shuffled(style.exampleImageUrls),
+    }))
 }
 
 export async function getAiImageVideoTemplates(): Promise<AiImageVideoTemplate[]> {

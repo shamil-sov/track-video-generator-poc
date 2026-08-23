@@ -38,4 +38,18 @@ describe('getAiImageVisualStyles', () => {
 
     expect(styles.map(style => style.exampleImageUrls)).toEqual([[], ['only.jpg']])
   })
+
+  it('excludes visual styles removed from the generation picker', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: [
+        { id: 'living-impasto', name: 'Living Impasto', exampleImageUrls: ['kept.jpg'] },
+        { id: 'moire-rotor-ballet', name: 'Moire Rotor Ballet', exampleImageUrls: ['hidden.jpg'] },
+        { id: 'sandglass-fable', name: 'Sandglass Fable', exampleImageUrls: ['hidden-too.jpg'] },
+      ],
+    }), { status: 200 })))
+
+    const styles = await getAiImageVisualStyles()
+
+    expect(styles.map(style => style.id)).toEqual(['living-impasto'])
+  })
 })
