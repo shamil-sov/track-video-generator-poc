@@ -26,6 +26,18 @@ const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
 const AI_IMAGE_TEMPLATES_URL = `${AI_IMAGE_API_URL}/ai-image-video-templates`
 const AI_IMAGE_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-video-jobs`
 
+function shuffled<T>(values: readonly T[]): T[] {
+  const result = [...values]
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const replacementIndex = Math.floor(Math.random() * (index + 1))
+    const currentValue = result[index]
+    result[index] = result[replacementIndex]
+    result[replacementIndex] = currentValue
+  }
+
+  return result
+}
+
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.ok) {
     return response.json() as Promise<T>
@@ -84,7 +96,12 @@ export async function getAllJobs(): Promise<TrackVideoJob[]> {
 
 export async function getAiImageVisualStyles(): Promise<AiImageVisualStyle[]> {
   const response = await fetch(AI_IMAGE_STYLES_URL)
-  return (await parseResponse<AiImageCatalogue<AiImageVisualStyle>>(response)).data
+  const styles = (await parseResponse<AiImageCatalogue<AiImageVisualStyle>>(response)).data
+
+  return styles.map(style => ({
+    ...style,
+    exampleImageUrls: shuffled(style.exampleImageUrls),
+  }))
 }
 
 export async function getAiImageVideoTemplates(): Promise<AiImageVideoTemplate[]> {
