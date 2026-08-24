@@ -98,6 +98,9 @@ describe('AI-image picker components', () => {
       },
     })
 
+    expect(wrapper.find('.selected-template').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Selected video template')
+
     await wrapper.find('video').trigger('error')
     expect(wrapper.text()).toContain('Unavailable')
 

@@ -1,67 +1,103 @@
 <template>
-  <div class="template-grid" role="radiogroup" aria-label="AI-image video template">
-    <button
-      v-for="template in templates"
-      :key="template.id"
-      type="button"
-      class="template-card"
-      :class="{ 'template-card--selected': model === template.id }"
-      role="radio"
-      :aria-checked="model === template.id"
-      :tabindex="model === template.id ? 0 : -1"
-      :ref="element => setButtonElement(template.id, element)"
-      @mouseenter="activePreview = template.id"
-      @mouseleave="activePreview = null"
-      @focus="activePreview = template.id"
-      @blur="activePreview = null"
-      @click="model = template.id"
-      @keydown.left.prevent="selectAdjacentTemplate(template.id, -1)"
-      @keydown.up.prevent="selectAdjacentTemplate(template.id, -1)"
-      @keydown.right.prevent="selectAdjacentTemplate(template.id, 1)"
-      @keydown.down.prevent="selectAdjacentTemplate(template.id, 1)"
-    >
-      <video
-        v-if="!failedPreviews.has(template.id)"
-        :ref="element => setVideoElement(template.id, element)"
-        :src="template.exampleVideoUrl"
-        :aria-label="`${template.name} video example`"
-        class="template-preview"
-        loop
-        muted
-        playsinline
-        preload="metadata"
-        @error="failedPreviews.add(template.id)"
-      ></video>
-      <span v-else class="template-preview template-preview--unavailable">
-        <v-icon icon="mdi-video-off-outline" size="28" />
-        <small>Unavailable</small>
-      </span>
+  <div class="template-picker">
+    <section v-if="selectedTemplate" class="selected-template" aria-live="polite">
+      <div class="selected-template__media">
+        <video
+          v-if="!failedPreviews.has(selectedTemplate.id)"
+          :src="selectedTemplate.exampleVideoUrl"
+          :aria-label="`${selectedTemplate.name} selected video template preview`"
+          class="selected-template__video"
+          autoplay
+          loop
+          muted
+          playsinline
+          preload="metadata"
+          @error="failedPreviews.add(selectedTemplate.id)"
+        ></video>
+        <span v-else class="selected-template__video template-preview--unavailable">
+          <v-icon icon="mdi-video-off-outline" size="38" />
+          <small>Preview unavailable</small>
+        </span>
+      </div>
 
-      <span class="template-copy">
-        <span class="template-name">{{ template.name }}</span>
-        <span class="template-description">{{ template.description }}</span>
-      </span>
+      <div class="selected-template__copy">
+        <span>Selected video template</span>
+        <strong>{{ selectedTemplate.name }}</strong>
+        <p>{{ selectedTemplate.description }}</p>
+        <small>
+          <v-icon icon="mdi-play-circle-outline" size="16" />
+          Live motion preview
+        </small>
+      </div>
+    </section>
 
-      <span class="template-check">
-        <v-icon
-          :icon="model === template.id ? 'mdi-check-circle' : 'mdi-circle-outline'"
-          size="20"
-        />
-      </span>
-    </button>
+    <div class="template-grid" role="radiogroup" aria-label="AI-image video template">
+      <button
+        v-for="template in templates"
+        :key="template.id"
+        type="button"
+        class="template-card"
+        :class="{ 'template-card--selected': model === template.id }"
+        role="radio"
+        :aria-checked="model === template.id"
+        :tabindex="model === template.id ? 0 : -1"
+        :ref="element => setButtonElement(template.id, element)"
+        @mouseenter="activePreview = template.id"
+        @mouseleave="activePreview = null"
+        @focus="activePreview = template.id"
+        @blur="activePreview = null"
+        @click="model = template.id"
+        @keydown.left.prevent="selectAdjacentTemplate(template.id, -1)"
+        @keydown.up.prevent="selectAdjacentTemplate(template.id, -1)"
+        @keydown.right.prevent="selectAdjacentTemplate(template.id, 1)"
+        @keydown.down.prevent="selectAdjacentTemplate(template.id, 1)"
+      >
+        <video
+          v-if="!failedPreviews.has(template.id)"
+          :ref="element => setVideoElement(template.id, element)"
+          :src="template.exampleVideoUrl"
+          :aria-label="`${template.name} video example`"
+          class="template-preview"
+          loop
+          muted
+          playsinline
+          preload="metadata"
+          @error="failedPreviews.add(template.id)"
+        ></video>
+        <span v-else class="template-preview template-preview--unavailable">
+          <v-icon icon="mdi-video-off-outline" size="28" />
+          <small>Unavailable</small>
+        </span>
+
+        <span class="template-copy">
+          <span class="template-name">{{ template.name }}</span>
+          <span class="template-description">{{ template.description }}</span>
+        </span>
+
+        <span class="template-check">
+          <v-icon
+            :icon="model === template.id ? 'mdi-check-circle' : 'mdi-circle-outline'"
+            size="20"
+          />
+        </span>
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import type { AiImageVideoTemplate } from '@/types/aiImageTrackVideo'
 
-defineProps<{
+const props = defineProps<{
   templates: AiImageVideoTemplate[]
 }>()
 
 const model = defineModel<string | null>({ required: true })
+const selectedTemplate = computed(() => (
+  props.templates.find(template => template.id === model.value) || null
+))
 const activePreview = ref<string | null>(null)
 const videoElements = new Map<string, HTMLVideoElement>()
 const buttonElements = new Map<string, HTMLButtonElement>()
@@ -128,6 +164,79 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.template-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.selected-template {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  gap: 26px;
+  align-items: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle at 0 0, rgba(127, 140, 255, 0.16), transparent 48%),
+    rgba(var(--v-theme-on-surface), 0.035);
+  border: 1px solid rgba(var(--v-theme-primary), 0.22);
+  border-radius: 18px;
+}
+
+.selected-template__media {
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 9 / 16;
+  background: #101116;
+  border-radius: 14px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38);
+}
+
+.selected-template__video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.selected-template__copy {
+  display: flex;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.selected-template__copy > span {
+  color: rgb(var(--v-theme-primary));
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.selected-template__copy strong {
+  margin-top: 5px;
+  font-size: clamp(1.35rem, 2vw, 2rem);
+  letter-spacing: -0.045em;
+}
+
+.selected-template__copy p {
+  max-width: 560px;
+  margin: 8px 0 0;
+  color: rgba(var(--v-theme-on-surface), 0.58);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.selected-template__copy small {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 20px;
+  color: rgba(var(--v-theme-on-surface), 0.45);
+  font-size: 0.7rem;
+}
+
 .template-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -218,6 +327,15 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 620px) {
+  .selected-template {
+    grid-template-columns: 125px minmax(0, 1fr);
+    gap: 16px;
+  }
+
+  .selected-template__copy p {
+    display: none;
+  }
+
   .template-grid {
     grid-template-columns: 1fr;
   }
