@@ -37,93 +37,48 @@
         <div class="generator-header">
           <div>
             <div class="section-kicker">New AI-image generation</div>
-            <h2>Pick a track, artwork, and motion</h2>
+            <h2>Start with a track</h2>
           </div>
           <v-chip size="small" variant="tonal" prepend-icon="mdi-clock-fast">
             15 seconds from the start
           </v-chip>
         </div>
 
-        <form @submit.prevent="handleSubmit">
-          <v-text-field
-            v-model="trackUrl"
-            label="BandLab track URL"
-            placeholder="https://test.bandlab.com/track/..."
-            variant="outlined"
-            density="comfortable"
-            color="primary"
-            prepend-inner-icon="mdi-link-variant"
-            :error-messages="trackUrlError"
-            :disabled="submitting"
-            autocomplete="url"
-            @blur="urlTouched = true"
-          />
-
-          <div class="field-heading">
-            <div>
-              <span>AI visual style</span>
-              <small>Examples show the creative range of each style.</small>
-            </div>
-            <v-chip size="x-small" variant="tonal" prepend-icon="mdi-image-multiple-outline">
-              {{ visualStyles.length }} styles
-            </v-chip>
+        <form class="track-start-form" @submit.prevent="openWizard">
+          <div>
+            <v-text-field
+              v-model="trackUrl"
+              label="BandLab track URL"
+              placeholder="https://test.bandlab.com/track/..."
+              variant="outlined"
+              density="comfortable"
+              color="primary"
+              prepend-inner-icon="mdi-link-variant"
+              :error-messages="trackUrlError"
+              :disabled="submitting"
+              autocomplete="url"
+              @blur="urlTouched = true"
+            />
+            <p>Next, you’ll choose an AI visual style and a video template.</p>
           </div>
 
-          <div v-if="cataloguesLoading" class="style-loading">
-            <v-skeleton-loader type="image, article" />
-            <div>
-              <v-skeleton-loader v-for="index in 6" :key="index" type="image" />
-            </div>
-          </div>
-          <AiVisualStylePicker
-            v-else-if="visualStyles.length"
-            v-model="selectedVisualStyle"
-            :styles="visualStyles"
-          />
-          <v-alert v-else type="warning" variant="tonal" density="compact">
-            Visual styles are currently unavailable. Refresh to try loading the catalogue again.
-          </v-alert>
-
-          <div class="field-heading field-heading--template">
-            <div>
-              <span>Video template</span>
-              <small>Hover or select a template to preview its motion.</small>
-            </div>
-          </div>
-
-          <div v-if="cataloguesLoading" class="template-loading">
-            <v-skeleton-loader v-for="index in 4" :key="index" type="image, article" />
-          </div>
-          <AiVideoTemplatePicker
-            v-else-if="videoTemplates.length"
-            v-model="selectedTemplate"
-            :templates="videoTemplates"
-          />
-          <v-alert v-else type="warning" variant="tonal" density="compact">
-            Video templates are currently unavailable. Refresh to try loading the catalogue again.
-          </v-alert>
-
-          <div class="generator-footer">
-            <p>
-              AI-image videos have their own shared history below. This workflow creates its artwork from the track and does not support text overlays.
-            </p>
+          <div class="track-start-action">
             <v-btn
               type="submit"
               color="primary"
               size="large"
               rounded="lg"
               prepend-icon="mdi-image-sparkles-outline"
-              :loading="submitting"
-              :disabled="!canSubmit"
+              :disabled="submitting"
             >
-              Generate AI video
+              Generate
             </v-btn>
           </div>
         </form>
       </v-card>
 
       <v-alert
-        v-if="error"
+        v-if="error && !wizardOpen"
         type="error"
         variant="tonal"
         closable
@@ -292,6 +247,17 @@
       </section>
     </v-container>
 
+    <AiImageGenerationWizard
+      v-model="wizardOpen"
+      :visual-styles="visualStyles"
+      :video-templates="videoTemplates"
+      :catalogues-loading="cataloguesLoading"
+      :submitting="submitting"
+      :error="error"
+      @clear-error="clearError"
+      @submit="handleWizardSubmit"
+    />
+
     <v-snackbar v-model="showSuccess" color="success" :timeout="4500">
       <v-icon icon="mdi-check-circle" class="mr-2" />
       AI-image job created. This page will refresh while it renders.
@@ -300,10 +266,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import AiImageGenerationWizard from '@/components/AiImageGenerationWizard.vue'
 import AiImageJobCard from '@/components/AiImageJobCard.vue'
-import AiVideoTemplatePicker from '@/components/AiVideoTemplatePicker.vue'
-import AiVisualStylePicker from '@/components/AiVisualStylePicker.vue'
 import { useAiImageVideoJobs } from '@/composables/useAiImageVideoJobs'
 import type { TrackVideoJobStatus } from '@/types/trackVideo'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
@@ -329,10 +294,9 @@ const {
 } = useAiImageVideoJobs()
 
 const trackUrl = ref('')
-const selectedVisualStyle = ref<string | null>(null)
-const selectedTemplate = ref<string | null>(null)
 const urlTouched = ref(false)
 const showSuccess = ref(false)
+const wizardOpen = ref(false)
 const search = ref('')
 const statusFilter = ref<'all' | TrackVideoJobStatus>('all')
 const templateFilter = ref('all')
@@ -370,18 +334,6 @@ const styleFilterOptions = computed(() => [
   ...visualStyleIds.value.map(id => ({ title: visualStyleName(id), value: id })),
 ])
 
-watch(visualStyles, styles => {
-  if (!selectedVisualStyle.value && styles.length) {
-    selectedVisualStyle.value = styles[0].id
-  }
-}, { immediate: true })
-
-watch(videoTemplates, templates => {
-  if (!selectedTemplate.value && templates.length) {
-    selectedTemplate.value = templates[0].id
-  }
-}, { immediate: true })
-
 function validateTrackUrl(value: string): string | null {
   if (!value.trim()) {
     return 'A track URL is required.'
@@ -418,12 +370,6 @@ function validateTrackUrl(value: string): string | null {
 
 const rawTrackUrlError = computed(() => validateTrackUrl(trackUrl.value))
 const trackUrlError = computed(() => urlTouched.value ? rawTrackUrlError.value : null)
-const canSubmit = computed(() => (
-  rawTrackUrlError.value === null
-  && Boolean(selectedTemplate.value)
-  && Boolean(selectedVisualStyle.value)
-  && !cataloguesLoading.value
-))
 const completedJobs = computed(() => jobs.value.filter(job => job.status === 'completed'))
 const totalTimings = computed(() => summarizeTimings(
   completedJobs.value.map(job => job.totalDurationMs),
@@ -485,18 +431,27 @@ function visualStyleName(id: string): string {
   return visualStyles.value.find(style => style.id === id)?.name || id
 }
 
-async function handleSubmit(): Promise<void> {
+function openWizard(): void {
   urlTouched.value = true
-  if (!canSubmit.value || !selectedTemplate.value || !selectedVisualStyle.value) {
+  if (rawTrackUrlError.value) {
     return
   }
 
+  clearError()
+  wizardOpen.value = true
+}
+
+async function handleWizardSubmit(selection: {
+  visualStyle: string
+  template: string
+}): Promise<void> {
   const created = await submitJob(
     trackUrl.value.trim(),
-    selectedTemplate.value,
-    selectedVisualStyle.value,
+    selection.template,
+    selection.visualStyle,
   )
   if (created) {
+    wizardOpen.value = false
     showSuccess.value = true
     trackUrl.value = ''
     urlTouched.value = false
@@ -669,63 +624,22 @@ onBeforeUnmount(stopPolling)
   font-size: 0.78rem;
 }
 
-.field-heading {
-  display: flex;
-  gap: 14px;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin: 22px 0 11px;
-}
-
-.field-heading--template {
-  margin-top: 28px;
-}
-
-.field-heading > div {
-  display: flex;
-  flex-direction: column;
-}
-
-.field-heading span {
-  color: rgba(var(--v-theme-on-surface), 0.7);
-  font-size: 0.75rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-.field-heading small {
-  margin-top: 3px;
-  color: rgba(var(--v-theme-on-surface), 0.4);
-  font-size: 0.69rem;
-}
-
-.style-loading > div:last-child,
-.template-loading {
+.track-start-form {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
 }
 
-.style-loading > div:last-child {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  margin-top: 12px;
-}
-
-.generator-footer {
-  display: flex;
-  gap: 28px;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 24px;
-}
-
-.generator-footer p {
-  max-width: 650px;
-  margin: 0;
+.track-start-form p {
+  margin: -10px 0 0 16px;
   color: rgba(var(--v-theme-on-surface), 0.52);
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   line-height: 1.5;
+}
+
+.track-start-action {
+  padding-top: 2px;
 }
 
 .library-section,
@@ -949,14 +863,17 @@ td {
   }
 
   .generator-header,
-  .generator-footer,
   .library-header,
   .performance-header {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .generator-footer .v-btn {
+  .track-start-form {
+    grid-template-columns: 1fr;
+  }
+
+  .track-start-action .v-btn {
     width: 100%;
   }
 
