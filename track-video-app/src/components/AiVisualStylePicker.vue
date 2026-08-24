@@ -215,7 +215,7 @@ function showNextImage(): void {
 .selected-preview__media {
   position: relative;
   overflow: hidden;
-  aspect-ratio: 9 / 12;
+  aspect-ratio: 9 / 16;
   background: #111319;
   border-radius: 14px;
 }
@@ -324,6 +324,7 @@ function showNextImage(): void {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
+  align-items: start;
   max-height: 500px;
   padding: 3px 5px 3px 3px;
   overflow: auto;
@@ -332,6 +333,7 @@ function showNextImage(): void {
 .style-card {
   position: relative;
   min-width: 0;
+  aspect-ratio: 9 / 16;
   padding: 0;
   overflow: hidden;
   color: white;
@@ -356,7 +358,7 @@ function showNextImage(): void {
 .style-card__image {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 5;
+  height: 100%;
 }
 
 .style-card__shade {
