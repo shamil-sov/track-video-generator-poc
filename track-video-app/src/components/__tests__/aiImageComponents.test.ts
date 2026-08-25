@@ -108,20 +108,12 @@ describe('AI-image picker components', () => {
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['vinyl-orbit'])
   })
 
-  it('guides the user from visual style to template before submitting', async () => {
+  it('submits after the user chooses a visual style', async () => {
     const wrapper = mount(AiImageGenerationWizard, {
       props: {
         modelValue: true,
         visualStyles: [
           { id: 'living-impasto', name: 'Living Impasto', exampleImageUrls: ['https://cdn.example/style.jpg'] },
-        ],
-        videoTemplates: [
-          {
-            id: 'orbit',
-            name: 'Orbit',
-            description: 'Orbit motion',
-            exampleVideoUrl: 'https://cdn.example/orbit.mp4',
-          },
         ],
         cataloguesLoading: false,
         submitting: false,
@@ -144,14 +136,6 @@ describe('AI-image picker components', () => {
     expect(wrapper.text()).toContain('Choose a visual style')
     await wrapper.find('.style-card').trigger('click')
 
-    const continueButton = wrapper.findAll('.wizard-actions button')
-      .find(button => button.text().includes('Continue'))
-    expect(continueButton).toBeDefined()
-    await continueButton!.trigger('click')
-
-    expect(wrapper.text()).toContain('Choose a video template')
-    await wrapper.find('.template-card').trigger('click')
-
     const generateButton = wrapper.findAll('.wizard-actions button')
       .find(button => button.text().includes('Generate video'))
     expect(generateButton).toBeDefined()
@@ -159,7 +143,6 @@ describe('AI-image picker components', () => {
 
     expect(wrapper.emitted('submit')?.at(-1)).toEqual([{
       visualStyle: 'living-impasto',
-      template: 'orbit',
     }])
   })
 })

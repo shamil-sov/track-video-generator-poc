@@ -45,7 +45,7 @@
         </div>
 
         <form class="track-start-form" @submit.prevent="openWizard">
-          <div>
+          <div class="track-url-field">
             <v-text-field
               v-model="trackUrl"
               label="BandLab track URL"
@@ -59,17 +59,37 @@
               autocomplete="url"
               @blur="urlTouched = true"
             />
-            <p>Next, you’ll choose an AI visual style and a video template.</p>
+            <p>Choose how the generated artwork should move, then continue to the visual style.</p>
           </div>
 
-          <div class="track-start-action">
+          <div class="field-heading">
+            <div>
+              <span>Video template</span>
+              <small>Select a template to preview its motion.</small>
+            </div>
+          </div>
+
+          <div v-if="cataloguesLoading" class="template-loading">
+            <v-skeleton-loader v-for="index in 4" :key="index" type="image, article" />
+          </div>
+          <AiVideoTemplatePicker
+            v-else-if="videoTemplates.length"
+            v-model="selectedTemplate"
+            :templates="videoTemplates"
+          />
+          <v-alert v-else type="warning" variant="tonal" density="compact">
+            Video templates are currently unavailable. Refresh to try loading the catalogue again.
+          </v-alert>
+
+          <div class="generator-footer">
+            <p>Your final step is choosing the AI visual style.</p>
             <v-btn
               type="submit"
               color="primary"
               size="large"
               rounded="lg"
               prepend-icon="mdi-image-sparkles-outline"
-              :disabled="submitting"
+              :disabled="submitting || cataloguesLoading || !selectedTemplate"
             >
               Generate
             </v-btn>
@@ -180,7 +200,7 @@
           <p>
             {{ jobs.length
               ? 'Try clearing one of the filters.'
-              : 'Paste a public BandLab track above, choose an image style and motion template, then generate.' }}
+              : 'Paste a public BandLab track above, choose a video template, then select the visual style.' }}
           </p>
           <v-btn
             v-if="hasFilters"
@@ -250,7 +270,6 @@
     <AiImageGenerationWizard
       v-model="wizardOpen"
       :visual-styles="visualStyles"
-      :video-templates="videoTemplates"
       :catalogues-loading="cataloguesLoading"
       :submitting="submitting"
       :error="error"
@@ -269,6 +288,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AiImageGenerationWizard from '@/components/AiImageGenerationWizard.vue'
 import AiImageJobCard from '@/components/AiImageJobCard.vue'
+import AiVideoTemplatePicker from '@/components/AiVideoTemplatePicker.vue'
 import { useAiImageVideoJobs } from '@/composables/useAiImageVideoJobs'
 import type { TrackVideoJobStatus } from '@/types/trackVideo'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
@@ -294,6 +314,7 @@ const {
 } = useAiImageVideoJobs()
 
 const trackUrl = ref('')
+const selectedTemplate = ref<string | null>(null)
 const urlTouched = ref(false)
 const showSuccess = ref(false)
 const wizardOpen = ref(false)
@@ -433,7 +454,7 @@ function visualStyleName(id: string): string {
 
 function openWizard(): void {
   urlTouched.value = true
-  if (rawTrackUrlError.value) {
+  if (rawTrackUrlError.value || !selectedTemplate.value) {
     return
   }
 
@@ -443,11 +464,14 @@ function openWizard(): void {
 
 async function handleWizardSubmit(selection: {
   visualStyle: string
-  template: string
 }): Promise<void> {
+  if (!selectedTemplate.value) {
+    return
+  }
+
   const created = await submitJob(
     trackUrl.value.trim(),
-    selection.template,
+    selectedTemplate.value,
     selection.visualStyle,
   )
   if (created) {
@@ -625,21 +649,62 @@ onBeforeUnmount(stopPolling)
 }
 
 .track-start-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 18px;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
 }
 
-.track-start-form p {
+.track-url-field > p {
   margin: -10px 0 0 16px;
   color: rgba(var(--v-theme-on-surface), 0.52);
   font-size: 0.72rem;
   line-height: 1.5;
 }
 
-.track-start-action {
-  padding-top: 2px;
+.field-heading {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 26px 0 11px;
+}
+
+.field-heading > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.field-heading span {
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.field-heading small {
+  margin-top: 3px;
+  color: rgba(var(--v-theme-on-surface), 0.4);
+  font-size: 0.69rem;
+}
+
+.template-loading {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.generator-footer {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 24px;
+}
+
+.generator-footer p {
+  margin: 0;
+  color: rgba(var(--v-theme-on-surface), 0.52);
+  font-size: 0.76rem;
 }
 
 .library-section,
@@ -869,11 +934,12 @@ td {
     flex-direction: column;
   }
 
-  .track-start-form {
-    grid-template-columns: 1fr;
+  .generator-footer {
+    align-items: stretch;
+    flex-direction: column;
   }
 
-  .track-start-action .v-btn {
+  .generator-footer .v-btn {
     width: 100%;
   }
 
