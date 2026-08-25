@@ -144,6 +144,7 @@ import orbitVideo from '@/assets/templates/orbit-preview.mp4'
 import prismVideo from '@/assets/templates/prism-spectrum-preview.mp4'
 import threeDimensionalVideo from '@/assets/templates/3d-style-preview.mp4'
 import vinylOrbitVideo from '@/assets/templates/vinyl-orbit-preview.mp4'
+import vinylSleeveVideo from '@/assets/templates/vinyl-sleeve-preview.mp4'
 import { useTrackVideoJobs } from '@/composables/useTrackVideoJobs'
 import { templateLabel, type TrackVideoTemplate } from '@/types/trackVideo'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
@@ -155,6 +156,7 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
   '3d-style': threeDimensionalVideo,
   'music-visualizer': musicVisualizerVideo,
   'vinyl-orbit': vinylOrbitVideo,
+  'vinyl-sleeve': vinylSleeveVideo,
 }
 
 const {

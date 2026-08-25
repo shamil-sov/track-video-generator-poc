@@ -16,6 +16,14 @@ export const VIDEO_TEMPLATES = [
     accent: '#ffac5f',
   },
   {
+    value: 'vinyl-sleeve',
+    label: 'Vinyl Sleeve',
+    shortLabel: 'Vinyl Sleeve',
+    description: 'A record slides from its sleeve beside a reactive spectrum.',
+    icon: 'mdi-album',
+    accent: '#5fb7ff',
+  },
+  {
     value: 'orbit',
     label: 'Orbit',
     shortLabel: 'Orbit',

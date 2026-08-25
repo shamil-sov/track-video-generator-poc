@@ -51,6 +51,8 @@ import threeDimensionalThumbnail from '@/assets/templates/3d-style.jpg'
 import threeDimensionalVideo from '@/assets/templates/3d-style-preview.mp4'
 import vinylOrbitThumbnail from '@/assets/templates/vinyl-orbit.jpg'
 import vinylOrbitVideo from '@/assets/templates/vinyl-orbit-preview.mp4'
+import vinylSleeveThumbnail from '@/assets/templates/vinyl-sleeve.jpg'
+import vinylSleeveVideo from '@/assets/templates/vinyl-sleeve-preview.mp4'
 import { VIDEO_TEMPLATES, type TrackVideoTemplate } from '@/types/trackVideo'
 
 const model = defineModel<TrackVideoTemplate>({ required: true })
@@ -61,6 +63,7 @@ const templateImages: Record<TrackVideoTemplate, string> = {
   '3d-style': threeDimensionalThumbnail,
   'music-visualizer': musicVisualizerThumbnail,
   'vinyl-orbit': vinylOrbitThumbnail,
+  'vinyl-sleeve': vinylSleeveThumbnail,
 }
 
 const templateVideos: Record<TrackVideoTemplate, string> = {
@@ -69,13 +72,14 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
   '3d-style': threeDimensionalVideo,
   'music-visualizer': musicVisualizerVideo,
   'vinyl-orbit': vinylOrbitVideo,
+  'vinyl-sleeve': vinylSleeveVideo,
 }
 </script>
 
 <style scoped>
 .template-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 12px;
 }
 
