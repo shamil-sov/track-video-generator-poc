@@ -108,6 +108,35 @@ describe('AI-image picker components', () => {
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['vinyl-orbit'])
   })
 
+  it('preselects the first available video template', () => {
+    const wrapper = mount(AiVideoTemplatePicker, {
+      props: {
+        modelValue: null,
+        templates: [
+          {
+            id: 'orbit',
+            name: 'Orbit',
+            description: 'Orbit motion',
+            exampleVideoUrl: 'https://cdn.example/orbit.mp4',
+          },
+          {
+            id: 'vinyl-orbit',
+            name: 'Vinyl',
+            description: 'Vinyl motion',
+            exampleVideoUrl: 'https://cdn.example/vinyl.mp4',
+          },
+        ],
+      },
+      global: {
+        stubs: {
+          VIcon: passthroughStub,
+        },
+      },
+    })
+
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['orbit'])
+  })
+
   it('submits after the user chooses a visual style', async () => {
     const wrapper = mount(AiImageGenerationWizard, {
       props: {

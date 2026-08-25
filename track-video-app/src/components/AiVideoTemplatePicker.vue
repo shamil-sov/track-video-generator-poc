@@ -103,6 +103,12 @@ const videoElements = new Map<string, HTMLVideoElement>()
 const buttonElements = new Map<string, HTMLButtonElement>()
 const failedPreviews = reactive(new Set<string>())
 
+watch(() => props.templates, templates => {
+  if (!model.value && templates.length) {
+    model.value = templates[0].id
+  }
+}, { immediate: true })
+
 function setButtonElement(
   id: string,
   element: Element | ComponentPublicInstance | null,
