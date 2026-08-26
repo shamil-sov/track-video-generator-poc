@@ -43,7 +43,7 @@ describe('API client', () => {
     expect(styles.map(style => style.exampleImageUrls)).toEqual([[], ['only.jpg']])
   })
 
-  it('excludes visual styles removed from the generation picker', async () => {
+  it('preserves every visual style returned by the catalogue', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       data: [
         { id: 'living-impasto', name: 'Living Impasto', exampleImageUrls: ['kept.jpg'] },
@@ -54,7 +54,11 @@ describe('API client', () => {
 
     const styles = await getAiImageVisualStyles()
 
-    expect(styles.map(style => style.id)).toEqual(['living-impasto'])
+    expect(styles.map(style => style.id)).toEqual([
+      'living-impasto',
+      'moire-rotor-ballet',
+      'sandglass-fable',
+    ])
   })
 
   it('submits a trimmed image prompt with optional track context', async () => {
