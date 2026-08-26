@@ -157,6 +157,38 @@ describe('AI-image picker components', () => {
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['living-impasto'])
     expect(wrapper.findAll('.carousel-controls button')).toHaveLength(2)
   })
+
+  it('centers the active example with faded neighboring previews', async () => {
+    const wrapper = mount(AiVisualStylePicker, {
+      props: {
+        modelValue: 'living-impasto',
+        styles: [{
+          id: 'living-impasto',
+          name: 'Living Impasto',
+          exampleImageUrls: [
+            'https://cdn.example/one.jpg',
+            'https://cdn.example/two.jpg',
+            'https://cdn.example/three.jpg',
+          ],
+        }],
+      },
+      global: {
+        stubs: {
+          VImg: imageStub,
+          VIcon: passthroughStub,
+          VBtn: buttonStub,
+        },
+      },
+    })
+
+    expect(wrapper.findAll('.gallery-peek')).toHaveLength(2)
+    expect(wrapper.find('.selected-preview__media img').attributes('src'))
+      .toBe('https://cdn.example/one.jpg')
+
+    await wrapper.find('[aria-label="Next style example"]').trigger('click')
+    expect(wrapper.find('.selected-preview__media img').attributes('src'))
+      .toBe('https://cdn.example/two.jpg')
+  })
 })
 
 describe('AiImageJobCard', () => {

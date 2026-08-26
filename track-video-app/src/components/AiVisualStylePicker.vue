@@ -1,40 +1,6 @@
 <template>
   <div class="style-picker">
     <section v-if="selectedStyle" class="selected-preview" aria-live="polite">
-      <div class="selected-preview__media">
-        <v-img
-          v-if="activeImageUrl && !failedImages.has(activeImageUrl)"
-          :src="activeImageUrl"
-          :alt="`${selectedStyle.name} example ${activeImageIndex + 1}`"
-          cover
-          class="selected-preview__image"
-          @error="failedImages.add(activeImageUrl)"
-        />
-        <div v-else class="image-placeholder">
-          <v-icon icon="mdi-image-off-outline" size="42" />
-          <span>No example available</span>
-        </div>
-
-        <template v-if="selectedImages.length > 1">
-          <v-btn
-            icon="mdi-chevron-left"
-            variant="flat"
-            size="small"
-            class="gallery-arrow gallery-arrow--left"
-            aria-label="Previous style example"
-            @click="showPreviousImage"
-          />
-          <v-btn
-            icon="mdi-chevron-right"
-            variant="flat"
-            size="small"
-            class="gallery-arrow gallery-arrow--right"
-            aria-label="Next style example"
-            @click="showNextImage"
-          />
-        </template>
-      </div>
-
       <div class="selected-preview__copy">
         <span>Selected visual style</span>
         <strong>{{ selectedStyle.name }}</strong>
@@ -42,17 +8,94 @@
           {{ selectedImages.length }} reviewed
           {{ selectedImages.length === 1 ? 'example' : 'examples' }}
         </small>
+      </div>
 
-        <div v-if="selectedImages.length > 1" class="gallery-progress">
-          <button
-            v-for="(_, index) in selectedImages"
-            :key="index"
-            type="button"
-            :class="{ 'gallery-progress__dot--active': activeImageIndex === index }"
-            :aria-label="`Show example ${index + 1}`"
-            @click="activeImageIndex = index"
-          ></button>
+      <div class="gallery-stage">
+        <button
+          v-if="selectedImages.length > 1"
+          type="button"
+          class="gallery-peek gallery-peek--previous"
+          aria-label="Show previous style example"
+          @click="showPreviousImage"
+        >
+          <v-img
+            v-if="previousImageUrl && !failedImages.has(previousImageUrl)"
+            :src="previousImageUrl"
+            :alt="`${selectedStyle.name} previous example`"
+            cover
+            class="gallery-peek__image"
+            @error="failedImages.add(previousImageUrl)"
+          />
+          <div v-else class="image-placeholder">
+            <v-icon icon="mdi-image-off-outline" size="30" />
+          </div>
+        </button>
+
+        <div class="selected-preview__media">
+          <v-img
+            v-if="activeImageUrl && !failedImages.has(activeImageUrl)"
+            :key="activeImageUrl"
+            :src="activeImageUrl"
+            :alt="`${selectedStyle.name} example ${activeImageIndex + 1}`"
+            cover
+            class="selected-preview__image"
+            @error="failedImages.add(activeImageUrl)"
+          />
+          <div v-else class="image-placeholder">
+            <v-icon icon="mdi-image-off-outline" size="42" />
+            <span>No example available</span>
+          </div>
+
+          <template v-if="selectedImages.length > 1">
+            <v-btn
+              icon="mdi-chevron-left"
+              variant="flat"
+              size="small"
+              class="gallery-arrow gallery-arrow--left"
+              aria-label="Previous style example"
+              @click="showPreviousImage"
+            />
+            <v-btn
+              icon="mdi-chevron-right"
+              variant="flat"
+              size="small"
+              class="gallery-arrow gallery-arrow--right"
+              aria-label="Next style example"
+              @click="showNextImage"
+            />
+          </template>
         </div>
+
+        <button
+          v-if="selectedImages.length > 1"
+          type="button"
+          class="gallery-peek gallery-peek--next"
+          aria-label="Show next style example"
+          @click="showNextImage"
+        >
+          <v-img
+            v-if="nextImageUrl && !failedImages.has(nextImageUrl)"
+            :src="nextImageUrl"
+            :alt="`${selectedStyle.name} next example`"
+            cover
+            class="gallery-peek__image"
+            @error="failedImages.add(nextImageUrl)"
+          />
+          <div v-else class="image-placeholder">
+            <v-icon icon="mdi-image-off-outline" size="30" />
+          </div>
+        </button>
+      </div>
+
+      <div v-if="selectedImages.length > 1" class="gallery-progress">
+        <button
+          v-for="(_, index) in selectedImages"
+          :key="index"
+          type="button"
+          :class="{ 'gallery-progress__dot--active': activeImageIndex === index }"
+          :aria-label="`Show example ${index + 1}`"
+          @click="activeImageIndex = index"
+        ></button>
       </div>
     </section>
 
@@ -147,6 +190,24 @@ const styleButtons = new Map<string, HTMLButtonElement>()
 const selectedStyle = computed(() => props.styles.find(style => style.id === model.value) || null)
 const selectedImages = computed(() => selectedStyle.value?.exampleImageUrls || [])
 const activeImageUrl = computed(() => selectedImages.value[activeImageIndex.value] || null)
+const previousImageUrl = computed(() => {
+  if (selectedImages.value.length < 2) {
+    return null
+  }
+
+  const index = (
+    activeImageIndex.value - 1 + selectedImages.value.length
+  ) % selectedImages.value.length
+  return selectedImages.value[index] || null
+})
+const nextImageUrl = computed(() => {
+  if (selectedImages.value.length < 2) {
+    return null
+  }
+
+  const index = (activeImageIndex.value + 1) % selectedImages.value.length
+  return selectedImages.value[index] || null
+})
 
 watch(
   () => props.styles,
@@ -223,24 +284,38 @@ function showNextImage(): void {
 }
 
 .selected-preview {
-  display: grid;
-  grid-template-columns: 190px minmax(0, 1fr);
-  gap: 24px;
+  display: flex;
+  gap: 12px;
   align-items: center;
+  flex-direction: column;
   padding: 16px;
   background:
-    radial-gradient(circle at 0 0, rgba(127, 140, 255, 0.16), transparent 48%),
+    radial-gradient(circle at 50% 36%, rgba(127, 140, 255, 0.2), transparent 44%),
     rgba(var(--v-theme-on-surface), 0.035);
   border: 1px solid rgba(var(--v-theme-primary), 0.22);
   border-radius: 18px;
 }
 
+.gallery-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(70px, 1fr) clamp(180px, 22vw, 230px) minmax(70px, 1fr);
+  gap: 0;
+  align-items: center;
+  width: 100%;
+  max-width: 820px;
+  overflow: hidden;
+}
+
 .selected-preview__media {
   position: relative;
+  z-index: 2;
   overflow: hidden;
   aspect-ratio: 9 / 16;
   background: #111319;
-  border-radius: 14px;
+  border: 1px solid rgba(var(--v-theme-primary), 0.48);
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
 }
 
 .selected-preview__image {
@@ -250,8 +325,9 @@ function showNextImage(): void {
 
 .selected-preview__copy {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   flex-direction: column;
+  text-align: center;
 }
 
 .selected-preview__copy > span {
@@ -283,17 +359,63 @@ function showNextImage(): void {
 }
 
 .gallery-arrow--left {
-  left: 7px;
+  left: 9px;
 }
 
 .gallery-arrow--right {
-  right: 7px;
+  right: 9px;
+}
+
+.gallery-peek {
+  position: relative;
+  width: min(100%, 205px);
+  aspect-ratio: 9 / 16;
+  padding: 0;
+  overflow: hidden;
+  cursor: pointer;
+  background: #111319;
+  border: 0;
+  border-radius: 14px;
+  opacity: 0.32;
+  filter: blur(2.5px) saturate(0.7);
+  transition: 180ms ease;
+}
+
+.gallery-peek::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: rgba(var(--v-theme-surface), 0.2);
+}
+
+.gallery-peek:hover,
+.gallery-peek:focus-visible {
+  opacity: 0.5;
+  filter: blur(1.5px) saturate(0.85);
+}
+
+.gallery-peek--previous {
+  z-index: 1;
+  justify-self: end;
+  transform: translateX(18%) scale(0.88);
+}
+
+.gallery-peek--next {
+  z-index: 1;
+  justify-self: start;
+  transform: translateX(-18%) scale(0.88);
+}
+
+.gallery-peek__image,
+.gallery-peek .image-placeholder {
+  width: 100%;
+  height: 100%;
 }
 
 .gallery-progress {
   display: flex;
   gap: 6px;
-  margin-top: 20px;
+  margin-top: 2px;
 }
 
 .gallery-progress button {
@@ -447,7 +569,19 @@ function showNextImage(): void {
 
 @media (max-width: 620px) {
   .selected-preview {
-    grid-template-columns: 125px minmax(0, 1fr);
+    padding: 14px 10px;
+  }
+
+  .gallery-stage {
+    grid-template-columns: minmax(36px, 1fr) clamp(155px, 49vw, 190px) minmax(36px, 1fr);
+  }
+
+  .gallery-peek--previous {
+    transform: translateX(34%) scale(0.82);
+  }
+
+  .gallery-peek--next {
+    transform: translateX(-34%) scale(0.82);
   }
 
   .style-card {
