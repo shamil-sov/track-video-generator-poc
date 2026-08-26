@@ -1,67 +1,86 @@
 <template>
   <div class="template-picker">
     <section class="selected-template" aria-live="polite">
-      <div class="selected-template__media">
-        <video
-          v-if="selectedPreviewUrl"
-          :key="selectedPreviewUrl"
-          :src="selectedPreviewUrl"
-          :aria-label="`${selectedTemplate.name} selected video template preview ${selectedPreviewIndex + 1}`"
-          class="selected-template__video"
-          autoplay
-          loop
-          muted
-          playsinline
-          preload="metadata"
-        ></video>
-        <div v-else class="template-video-placeholder">
-          <v-icon icon="mdi-video-outline" size="38" />
-        </div>
-
-        <template v-if="selectedTemplate.exampleVideoUrls.length > 1">
-          <button
-            type="button"
-            class="carousel-arrow carousel-arrow--previous"
-            aria-label="Show previous preview"
-            @click="showPreviousPreview"
-          >
-            <v-icon icon="mdi-chevron-left" size="24" />
-          </button>
-          <button
-            type="button"
-            class="carousel-arrow carousel-arrow--next"
-            aria-label="Show next preview"
-            @click="showNextPreview"
-          >
-            <v-icon icon="mdi-chevron-right" size="24" />
-          </button>
-
-          <div class="carousel-dots" role="group" :aria-label="`${selectedTemplate.name} previews`">
-            <button
-              v-for="(_, index) in selectedTemplate.exampleVideoUrls"
-              :key="index"
-              type="button"
-              class="carousel-dot"
-              :class="{ 'carousel-dot--selected': selectedPreviewIndex === index }"
-              :aria-pressed="selectedPreviewIndex === index"
-              :aria-label="`Show preview ${index + 1}`"
-              @click="selectedPreviewIndex = index"
-            ></button>
-          </div>
-        </template>
-      </div>
-
       <div class="selected-template__copy">
         <span>Selected video template</span>
         <strong>{{ selectedTemplate.name }}</strong>
-        <p>Preview this template across different tracks.</p>
+        <p>Choose a track example, then play it with sound.</p>
+        <button
+          v-if="selectedPreviewUrl"
+          type="button"
+          class="sound-toggle"
+          :aria-pressed="previewMuted"
+          @click="togglePreviewMuted"
+        >
+          <v-icon :icon="previewMuted ? 'mdi-volume-off' : 'mdi-volume-high'" size="17" />
+          {{ previewMuted ? 'Sound off' : 'Sound on' }}
+        </button>
+      </div>
 
-        <small v-if="selectedTemplate.exampleVideoUrls.length">
-          <v-icon icon="mdi-image-multiple-outline" size="16" />
-          {{ selectedTemplate.exampleVideoUrls.length > 1
-            ? 'Browse alternate previews'
-            : 'Live motion preview' }}
-        </small>
+      <div
+        class="preview-carousel"
+        :class="{ 'preview-carousel--single': selectedTemplate.exampleVideoUrls.length <= 1 }"
+      >
+        <button
+          v-if="selectedTemplate.exampleVideoUrls.length > 1"
+          type="button"
+          class="carousel-arrow"
+          aria-label="Show previous preview"
+          @click="showPreviousPreview"
+        >
+          <v-icon icon="mdi-chevron-left" size="27" />
+        </button>
+
+        <button
+          v-if="selectedTemplate.exampleVideoUrls.length > 1"
+          type="button"
+          class="carousel-peek carousel-peek--previous"
+          aria-label="Select previous preview"
+          @click="showPreviousPreview"
+        >
+          <video :src="previousPreviewUrl" preload="metadata" playsinline></video>
+        </button>
+
+        <div class="selected-template__media">
+          <video
+            v-if="selectedPreviewUrl"
+            ref="selectedVideo"
+            :key="selectedPreviewUrl"
+            :src="selectedPreviewUrl"
+            :muted="previewMuted"
+            :aria-label="`${selectedTemplate.name} selected video template preview`"
+            class="selected-template__video"
+            autoplay
+            controls
+            loop
+            playsinline
+            preload="metadata"
+            @volumechange="syncPreviewMuted"
+          ></video>
+          <div v-else class="template-video-placeholder">
+            <v-icon icon="mdi-video-outline" size="38" />
+          </div>
+        </div>
+
+        <button
+          v-if="selectedTemplate.exampleVideoUrls.length > 1"
+          type="button"
+          class="carousel-peek carousel-peek--next"
+          aria-label="Select next preview"
+          @click="showNextPreview"
+        >
+          <video :src="nextPreviewUrl" preload="metadata" playsinline></video>
+        </button>
+
+        <button
+          v-if="selectedTemplate.exampleVideoUrls.length > 1"
+          type="button"
+          class="carousel-arrow"
+          aria-label="Show next preview"
+          @click="showNextPreview"
+        >
+          <v-icon icon="mdi-chevron-right" size="27" />
+        </button>
       </div>
     </section>
 
@@ -89,9 +108,6 @@
           :src="template.exampleVideoUrls[0]"
           :aria-label="`${template.name} video example`"
           class="template-preview"
-          autoplay
-          loop
-          muted
           playsinline
           preload="metadata"
         ></video>
@@ -113,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import type { TrackVideoTemplate, VideoTemplateCatalogueItem } from '@/types/trackVideo'
 
 const props = defineProps<{
@@ -127,19 +143,49 @@ const selectedPreviewIndex = ref(0)
 const selectedPreviewUrl = computed(() => (
   selectedTemplate.value?.exampleVideoUrls[selectedPreviewIndex.value] || null
 ))
+const previousPreviewUrl = computed(() => {
+  const previews = selectedTemplate.value.exampleVideoUrls
+  return previews[(selectedPreviewIndex.value - 1 + previews.length) % previews.length]
+})
+const nextPreviewUrl = computed(() => {
+  const previews = selectedTemplate.value.exampleVideoUrls
+  return previews[(selectedPreviewIndex.value + 1) % previews.length]
+})
+const selectedVideo = ref<HTMLVideoElement | null>(null)
+const previewMuted = ref(false)
+
+async function playSelectedPreview(): Promise<void> {
+  await nextTick()
+  const playRequest = selectedVideo.value?.play()
+  await playRequest?.catch(() => undefined)
+}
 
 function showPreviousPreview(): void {
   const count = selectedTemplate.value.exampleVideoUrls.length
   selectedPreviewIndex.value = (selectedPreviewIndex.value - 1 + count) % count
+  void playSelectedPreview()
 }
 
 function showNextPreview(): void {
   const count = selectedTemplate.value.exampleVideoUrls.length
   selectedPreviewIndex.value = (selectedPreviewIndex.value + 1) % count
+  void playSelectedPreview()
+}
+
+function togglePreviewMuted(): void {
+  previewMuted.value = !previewMuted.value
+  if (!previewMuted.value) {
+    void playSelectedPreview()
+  }
+}
+
+function syncPreviewMuted(event: Event): void {
+  previewMuted.value = (event.currentTarget as HTMLVideoElement).muted
 }
 
 watch(model, () => {
   selectedPreviewIndex.value = 0
+  void playSelectedPreview()
 })
 </script>
 
@@ -151,11 +197,11 @@ watch(model, () => {
 }
 
 .selected-template {
-  display: grid;
-  grid-template-columns: 210px minmax(0, 1fr);
-  gap: 26px;
+  display: flex;
+  gap: 24px;
   align-items: center;
-  padding: 16px;
+  flex-direction: column;
+  padding: 24px 20px 28px;
   background:
     radial-gradient(circle at 0 0, rgba(127, 140, 255, 0.16), transparent 48%),
     rgba(var(--v-theme-on-surface), 0.035);
@@ -164,7 +210,6 @@ watch(model, () => {
 }
 
 .selected-template__media {
-  position: relative;
   overflow: hidden;
   width: 100%;
   aspect-ratio: 9 / 16;
@@ -192,8 +237,9 @@ watch(model, () => {
 
 .selected-template__copy {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   flex-direction: column;
+  text-align: center;
 }
 
 .selected-template__copy > span {
@@ -218,101 +264,111 @@ watch(model, () => {
   line-height: 1.55;
 }
 
-.selected-template__copy small {
+.sound-toggle {
   display: flex;
-  gap: 6px;
+  gap: 7px;
   align-items: center;
-  margin-top: 20px;
-  color: rgba(var(--v-theme-on-surface), 0.45);
+  margin-top: 14px;
+  padding: 7px 11px;
+  color: rgba(var(--v-theme-on-surface), 0.72);
+  font: inherit;
   font-size: 0.7rem;
+  font-weight: 720;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  border-radius: 99px;
+  cursor: pointer;
+}
+
+.sound-toggle:hover,
+.sound-toggle:focus-visible {
+  color: rgb(var(--v-theme-primary));
+  border-color: rgba(var(--v-theme-primary), 0.42);
+  outline: none;
+}
+
+.preview-carousel {
+  display: grid;
+  grid-template-columns: 42px 88px minmax(180px, 224px) 88px 42px;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 680px);
+}
+
+.preview-carousel--single {
+  grid-template-columns: minmax(180px, 224px);
 }
 
 .carousel-arrow {
-  position: absolute;
-  z-index: 2;
-  top: 50%;
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   place-items: center;
   padding: 0;
-  color: white;
-  background: rgba(7, 8, 11, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(var(--v-theme-on-surface), 0.72);
+  background: rgba(var(--v-theme-on-surface), 0.065);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
   border-radius: 50%;
-  backdrop-filter: blur(8px);
   cursor: pointer;
-  opacity: 0.82;
-  transform: translateY(-50%);
   transition:
     background 160ms ease,
-    opacity 160ms ease,
     transform 160ms ease;
-}
-
-.carousel-arrow--previous {
-  left: 10px;
-}
-
-.carousel-arrow--next {
-  right: 10px;
 }
 
 .carousel-arrow:hover,
 .carousel-arrow:focus-visible {
-  background: rgba(7, 8, 11, 0.84);
-  outline: none;
-  opacity: 1;
-  transform: translateY(-50%) scale(1.05);
-}
-
-.carousel-dots {
-  position: absolute;
-  z-index: 2;
-  bottom: 8px;
-  left: 50%;
-  display: flex;
-  align-items: center;
-  padding: 2px 5px;
-  background: rgba(7, 8, 11, 0.54);
-  border-radius: 99px;
-  backdrop-filter: blur(8px);
-  transform: translateX(-50%);
-}
-
-.carousel-dot {
-  display: grid;
-  width: 20px;
-  height: 20px;
-  padding: 0;
-  place-items: center;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-
-.carousel-dot::after {
-  width: 6px;
-  height: 6px;
-  content: '';
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 99px;
-  transition:
-    width 160ms ease,
-    background 160ms ease;
-}
-
-.carousel-dot:hover::after,
-.carousel-dot:focus-visible::after,
-.carousel-dot--selected::after {
-  width: 14px;
+  color: rgb(var(--v-theme-on-primary));
   background: rgb(var(--v-theme-primary));
+  outline: none;
+  transform: scale(1.06);
 }
 
-.carousel-dot:focus-visible {
-  outline: 1px solid white;
-  outline-offset: -2px;
-  border-radius: 99px;
+.carousel-peek {
+  width: 88px;
+  aspect-ratio: 9 / 16;
+  padding: 0;
+  overflow: hidden;
+  background: #101116;
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  opacity: 0.38;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.carousel-peek--previous {
+  transform: perspective(400px) rotateY(9deg) scale(0.88);
+}
+
+.carousel-peek--next {
+  transform: perspective(400px) rotateY(-9deg) scale(0.88);
+}
+
+.carousel-peek:hover,
+.carousel-peek:focus-visible {
+  border-color: rgba(var(--v-theme-primary), 0.55);
+  outline: none;
+  opacity: 0.72;
+}
+
+.carousel-peek--previous:hover,
+.carousel-peek--previous:focus-visible {
+  transform: perspective(400px) rotateY(5deg) scale(0.94);
+}
+
+.carousel-peek--next:hover,
+.carousel-peek--next:focus-visible {
+  transform: perspective(400px) rotateY(-5deg) scale(0.94);
+}
+
+.carousel-peek video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .template-options-heading {
@@ -407,11 +463,20 @@ watch(model, () => {
 
 @media (max-width: 620px) {
   .selected-template {
-    grid-template-columns: 125px minmax(0, 1fr);
-    gap: 16px;
+    gap: 18px;
+    padding: 20px 12px 24px;
   }
 
-  .selected-template__copy p {
+  .preview-carousel {
+    grid-template-columns: 42px minmax(145px, 210px) 42px;
+    gap: 8px;
+  }
+
+  .preview-carousel--single {
+    grid-template-columns: minmax(145px, 210px);
+  }
+
+  .carousel-peek {
     display: none;
   }
 

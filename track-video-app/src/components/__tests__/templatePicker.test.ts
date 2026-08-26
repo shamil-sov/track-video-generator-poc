@@ -36,17 +36,22 @@ describe('TemplatePicker', () => {
 
     expect(wrapper.find('.selected-template').text()).toContain('Vinyl Launch')
     expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-1.mp4')
-    expect(wrapper.findAll('.carousel-dot')).toHaveLength(4)
+    expect((wrapper.find('.selected-template__video').element as HTMLVideoElement).muted).toBe(false)
+    expect(wrapper.find('.carousel-peek--previous video').attributes('src')).toBe('vinyl-4.mp4')
+    expect(wrapper.find('.carousel-peek--next video').attributes('src')).toBe('vinyl-2.mp4')
     expect(wrapper.findAll('.template-card')).toHaveLength(2)
+    expect(wrapper.find('.template-preview').attributes('autoplay')).toBeUndefined()
+    expect((wrapper.find('.template-preview').element as HTMLVideoElement).muted).toBe(false)
 
-    await wrapper.find('.carousel-arrow--next').trigger('click')
+    await wrapper.findAll('.carousel-arrow')[1].trigger('click')
     expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-2.mp4')
 
-    await wrapper.find('.carousel-arrow--previous').trigger('click')
+    await wrapper.findAll('.carousel-arrow')[0].trigger('click')
     expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-1.mp4')
 
-    await wrapper.findAll('.carousel-dot')[2].trigger('click')
-    expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-3.mp4')
+    await wrapper.find('.sound-toggle').trigger('click')
+    expect(wrapper.find('.sound-toggle').text()).toContain('Sound off')
+    expect((wrapper.find('.selected-template__video').element as HTMLVideoElement).muted).toBe(true)
 
     const vinylSleeve = wrapper.findAll('.template-card')
       .find(card => card.text().includes('Vinyl Sleeve'))
