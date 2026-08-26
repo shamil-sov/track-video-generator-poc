@@ -17,6 +17,38 @@
         <div v-else class="template-video-placeholder">
           <v-icon icon="mdi-video-outline" size="38" />
         </div>
+
+        <template v-if="selectedTemplate.exampleVideoUrls.length > 1">
+          <button
+            type="button"
+            class="carousel-arrow carousel-arrow--previous"
+            aria-label="Show previous preview"
+            @click="showPreviousPreview"
+          >
+            <v-icon icon="mdi-chevron-left" size="24" />
+          </button>
+          <button
+            type="button"
+            class="carousel-arrow carousel-arrow--next"
+            aria-label="Show next preview"
+            @click="showNextPreview"
+          >
+            <v-icon icon="mdi-chevron-right" size="24" />
+          </button>
+
+          <div class="carousel-dots" role="group" :aria-label="`${selectedTemplate.name} previews`">
+            <button
+              v-for="(_, index) in selectedTemplate.exampleVideoUrls"
+              :key="index"
+              type="button"
+              class="carousel-dot"
+              :class="{ 'carousel-dot--selected': selectedPreviewIndex === index }"
+              :aria-pressed="selectedPreviewIndex === index"
+              :aria-label="`Show preview ${index + 1}`"
+              @click="selectedPreviewIndex = index"
+            ></button>
+          </div>
+        </template>
       </div>
 
       <div class="selected-template__copy">
@@ -24,29 +56,11 @@
         <strong>{{ selectedTemplate.name }}</strong>
         <p>Preview this template across different tracks.</p>
 
-        <div
-          v-if="selectedTemplate.exampleVideoUrls.length > 1"
-          class="example-switcher"
-          role="group"
-          :aria-label="`${selectedTemplate.name} examples`"
-        >
-          <button
-            v-for="(_, index) in selectedTemplate.exampleVideoUrls"
-            :key="index"
-            type="button"
-            class="example-button"
-            :class="{ 'example-button--selected': selectedPreviewIndex === index }"
-            :aria-pressed="selectedPreviewIndex === index"
-            :aria-label="`Show example ${index + 1}`"
-            @click="selectedPreviewIndex = index"
-          >
-            {{ index + 1 }}
-          </button>
-        </div>
-
         <small v-if="selectedTemplate.exampleVideoUrls.length">
-          <v-icon icon="mdi-play-circle-outline" size="16" />
-          Example {{ selectedPreviewIndex + 1 }} of {{ selectedTemplate.exampleVideoUrls.length }}
+          <v-icon icon="mdi-image-multiple-outline" size="16" />
+          {{ selectedTemplate.exampleVideoUrls.length > 1
+            ? 'Browse alternate previews'
+            : 'Live motion preview' }}
         </small>
       </div>
     </section>
@@ -114,6 +128,16 @@ const selectedPreviewUrl = computed(() => (
   selectedTemplate.value?.exampleVideoUrls[selectedPreviewIndex.value] || null
 ))
 
+function showPreviousPreview(): void {
+  const count = selectedTemplate.value.exampleVideoUrls.length
+  selectedPreviewIndex.value = (selectedPreviewIndex.value - 1 + count) % count
+}
+
+function showNextPreview(): void {
+  const count = selectedTemplate.value.exampleVideoUrls.length
+  selectedPreviewIndex.value = (selectedPreviewIndex.value + 1) % count
+}
+
 watch(model, () => {
   selectedPreviewIndex.value = 0
 })
@@ -140,6 +164,7 @@ watch(model, () => {
 }
 
 .selected-template__media {
+  position: relative;
   overflow: hidden;
   width: 100%;
   aspect-ratio: 9 / 16;
@@ -202,34 +227,92 @@ watch(model, () => {
   font-size: 0.7rem;
 }
 
-.example-switcher {
-  display: flex;
-  gap: 7px;
-  margin-top: 18px;
+.carousel-arrow {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  padding: 0;
+  color: white;
+  background: rgba(7, 8, 11, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  opacity: 0.82;
+  transform: translateY(-50%);
+  transition:
+    background 160ms ease,
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
-.example-button {
+.carousel-arrow--previous {
+  left: 10px;
+}
+
+.carousel-arrow--next {
+  right: 10px;
+}
+
+.carousel-arrow:hover,
+.carousel-arrow:focus-visible {
+  background: rgba(7, 8, 11, 0.84);
+  outline: none;
+  opacity: 1;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.carousel-dots {
+  position: absolute;
+  z-index: 2;
+  bottom: 8px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  padding: 2px 5px;
+  background: rgba(7, 8, 11, 0.54);
+  border-radius: 99px;
+  backdrop-filter: blur(8px);
+  transform: translateX(-50%);
+}
+
+.carousel-dot {
   display: grid;
-  width: 34px;
-  height: 30px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
   place-items: center;
-  color: rgba(var(--v-theme-on-surface), 0.55);
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 760;
-  background: rgba(var(--v-theme-on-surface), 0.06);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.09);
-  border-radius: 9px;
+  background: transparent;
+  border: 0;
   cursor: pointer;
 }
 
-.example-button:hover,
-.example-button:focus-visible,
-.example-button--selected {
-  color: rgb(var(--v-theme-on-primary));
+.carousel-dot::after {
+  width: 6px;
+  height: 6px;
+  content: '';
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 99px;
+  transition:
+    width 160ms ease,
+    background 160ms ease;
+}
+
+.carousel-dot:hover::after,
+.carousel-dot:focus-visible::after,
+.carousel-dot--selected::after {
+  width: 14px;
   background: rgb(var(--v-theme-primary));
-  border-color: rgb(var(--v-theme-primary));
-  outline: none;
+}
+
+.carousel-dot:focus-visible {
+  outline: 1px solid white;
+  outline-offset: -2px;
+  border-radius: 99px;
 }
 
 .template-options-heading {

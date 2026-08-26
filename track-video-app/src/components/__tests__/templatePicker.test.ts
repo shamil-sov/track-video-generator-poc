@@ -36,10 +36,16 @@ describe('TemplatePicker', () => {
 
     expect(wrapper.find('.selected-template').text()).toContain('Vinyl Launch')
     expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-1.mp4')
-    expect(wrapper.findAll('.example-button')).toHaveLength(4)
+    expect(wrapper.findAll('.carousel-dot')).toHaveLength(4)
     expect(wrapper.findAll('.template-card')).toHaveLength(2)
 
-    await wrapper.findAll('.example-button')[2].trigger('click')
+    await wrapper.find('.carousel-arrow--next').trigger('click')
+    expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-2.mp4')
+
+    await wrapper.find('.carousel-arrow--previous').trigger('click')
+    expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-1.mp4')
+
+    await wrapper.findAll('.carousel-dot')[2].trigger('click')
     expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-3.mp4')
 
     const vinylSleeve = wrapper.findAll('.template-card')
