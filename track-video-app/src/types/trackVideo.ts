@@ -1,56 +1,15 @@
-export const VIDEO_TEMPLATES = [
-  {
-    value: '3d-style',
-    label: '3D Style',
-    shortLabel: '3D Style',
-    description: 'A fluid silk current with shifting direction and depth.',
-    icon: 'mdi-blur',
-    accent: '#7f8cff',
-  },
-  {
-    value: 'vinyl-orbit',
-    label: 'Vinyl',
-    shortLabel: 'Vinyl',
-    description: 'A spinning record with a radial spectrum and moving tonearm.',
-    icon: 'mdi-album',
-    accent: '#ffac5f',
-  },
-  {
-    value: 'vinyl-sleeve',
-    label: 'Vinyl Sleeve',
-    shortLabel: 'Vinyl Sleeve',
-    description: 'A record slides from its sleeve beside a reactive spectrum.',
-    icon: 'mdi-album',
-    accent: '#5fb7ff',
-  },
-  {
-    value: 'orbit',
-    label: 'Orbit',
-    shortLabel: 'Orbit',
-    description: 'A circular spectrum that breathes around the cover.',
-    icon: 'mdi-orbit',
-    accent: '#d7ff4f',
-  },
-  {
-    value: 'prism-spectrum',
-    label: 'Prism',
-    shortLabel: 'Prism',
-    description: 'A sharp, colorful spectrum with an editorial feel.',
-    icon: 'mdi-prism',
-    accent: '#ff5fd2',
-  },
-  {
-    value: 'music-visualizer',
-    label: 'Classic',
-    shortLabel: 'Classic',
-    description: 'A classic audio-reactive visualizer built around the track cover.',
-    icon: 'mdi-waveform',
-    accent: '#48d7ff',
-  },
-] as const
-
-export type TrackVideoTemplate = typeof VIDEO_TEMPLATES[number]['value']
+export type TrackVideoTemplate = string
 export type TrackVideoJobStatus = 'queued' | 'processing' | 'completed' | 'failed'
+
+export interface VideoTemplateCatalogueItem {
+  id: TrackVideoTemplate
+  name: string
+  exampleVideoUrls: string[]
+}
+
+export interface VideoTemplateCatalogue {
+  data: VideoTemplateCatalogueItem[]
+}
 
 export interface TrackSnapshot {
   name: string
@@ -111,6 +70,12 @@ export function isActiveJob(job: { status: TrackVideoJobStatus }): boolean {
   return job.status === 'queued' || job.status === 'processing'
 }
 
-export function templateLabel(template: TrackVideoTemplate): string {
-  return VIDEO_TEMPLATES.find(item => item.value === template)?.label ?? template
+export function fallbackTemplateName(template: TrackVideoTemplate): string {
+  return template
+    .split('-')
+    .filter(Boolean)
+    .map(part => part === '3d'
+      ? '3D'
+      : `${part.charAt(0).toUpperCase()}${part.slice(1)}`)
+    .join(' ')
 }

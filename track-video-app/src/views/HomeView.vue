@@ -30,7 +30,19 @@
           />
 
           <div class="field-label">Video style</div>
-          <TemplatePicker v-model="selectedTemplate" />
+          <v-skeleton-loader
+            v-if="templatesLoading"
+            type="image, article"
+            class="template-picker-loading"
+          />
+          <TemplatePicker
+            v-else-if="videoTemplates.length"
+            v-model="selectedTemplate"
+            :templates="videoTemplates"
+          />
+          <v-alert v-else type="warning" variant="tonal" density="compact">
+            {{ templateError || 'Video templates are currently unavailable. Refresh to try again.' }}
+          </v-alert>
 
           <div class="overlay-heading">
             <div class="field-label">Text overlay <span>Optional</span></div>
@@ -79,7 +91,7 @@
               rounded="lg"
               prepend-icon="mdi-creation"
               :loading="submitting"
-              :disabled="!isValidTrackUrl || Boolean(textOverlayError)"
+              :disabled="!isValidTrackUrl || !selectedTemplate || Boolean(textOverlayError)"
             >
               Generate video
             </v-btn>
@@ -167,6 +179,7 @@
             v-for="job in filteredJobs"
             :key="job.jobId"
             :job="job"
+            :template-name="templateName(job.template)"
           />
         </div>
 
@@ -200,13 +213,13 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CoverSectionNav from '@/components/CoverSectionNav.vue'
 import JobCard from '@/components/JobCard.vue'
 import TemplatePicker from '@/components/TemplatePicker.vue'
 import { useTrackVideoJobs } from '@/composables/useTrackVideoJobs'
+import { useVideoTemplates } from '@/composables/useVideoTemplates'
 import {
-  VIDEO_TEMPLATES,
   type TrackVideoJobStatus,
   type TrackVideoTemplate,
 } from '@/types/trackVideo'
@@ -225,8 +238,16 @@ const {
   stopPolling,
 } = useTrackVideoJobs()
 
+const {
+  templates: videoTemplates,
+  loading: templatesLoading,
+  error: templateError,
+  loadTemplates,
+  templateName,
+} = useVideoTemplates()
+
 const trackUrl = ref('')
-const selectedTemplate = ref<TrackVideoTemplate>('orbit')
+const selectedTemplate = ref<TrackVideoTemplate>('')
 type TextOverlayChoice = 'none' | 'coming-soon' | 'somethings-cooking' | 'out-now' | 'custom'
 
 const textOverlayOptions: ReadonlyArray<{ label: string, value: TextOverlayChoice }> = [
@@ -253,13 +274,28 @@ const statusOptions = [
   { title: 'Failed', value: 'failed' },
 ]
 
-const templateOptions = [
-  { title: 'All styles', value: 'all' },
-  ...VIDEO_TEMPLATES.map(template => ({
-    title: template.label,
-    value: template.value,
-  })),
-]
+const templateOptions = computed(() => {
+  const options = videoTemplates.value.map(template => ({
+    title: template.name,
+    value: template.id,
+  }))
+  const knownIds = new Set(videoTemplates.value.map(template => template.id))
+  const historicOptions = jobs.value
+    .map(job => job.template)
+    .filter((template, index, values) => (
+      !knownIds.has(template) && values.indexOf(template) === index
+    ))
+    .map(template => ({
+      title: templateName(template),
+      value: template,
+    }))
+
+  return [
+    { title: 'All styles', value: 'all' },
+    ...options,
+    ...historicOptions,
+  ]
+})
 
 function validateTrackUrl(value: string): string | null {
   if (!value.trim()) {
@@ -343,13 +379,19 @@ const filteredJobs = computed(() => {
 
     return [
       job.track?.name,
-      job.track?.genre,
+      templateName(job.template),
       job.jobId,
       job.postId,
       job.revisionId,
     ].some(value => value?.toLowerCase().includes(query))
   })
 })
+
+watch(videoTemplates, templates => {
+  if (templates.length && !templates.some(template => template.id === selectedTemplate.value)) {
+    selectedTemplate.value = templates[0].id
+  }
+}, { immediate: true })
 
 async function handleSubmit(): Promise<void> {
   urlTouched.value = true
@@ -374,7 +416,7 @@ function clearFilters(): void {
 }
 
 onMounted(() => {
-  void loadJobs()
+  void Promise.all([loadTemplates(), loadJobs()])
 })
 
 onBeforeUnmount(stopPolling)
@@ -395,6 +437,13 @@ onBeforeUnmount(stopPolling)
     rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2) !important;
+}
+
+.template-picker-loading {
+  min-height: 350px;
+  margin-bottom: 8px;
+  background: rgba(var(--v-theme-on-surface), 0.03);
+  border-radius: 18px;
 }
 
 .generator-header,

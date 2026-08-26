@@ -4,6 +4,7 @@ import {
   deleteAiGeneratedImageJob,
   getAiGeneratedImageJobs,
   getAiImageVisualStyles,
+  getVideoTemplates,
 } from '@/services/api'
 
 describe('API client', () => {
@@ -29,6 +30,28 @@ describe('API client', () => {
       'third.jpg',
       'first.jpg',
     ])
+  })
+
+  it('loads the cover-video template catalogue without changing its order or examples', async () => {
+    const templates = [
+      {
+        id: 'orbit',
+        name: 'Sonic Halo',
+        exampleVideoUrls: ['orbit-1.mp4', 'orbit-2.mp4'],
+      },
+      {
+        id: '3d-style',
+        name: 'Silk Current',
+        exampleVideoUrls: ['silk-1.mp4', 'silk-2.mp4'],
+      },
+    ]
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: templates,
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getVideoTemplates()).resolves.toEqual(templates)
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/track-video-generator/video-templates')
   })
 
   it('preserves empty and single-image example lists', async () => {

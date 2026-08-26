@@ -36,6 +36,17 @@
         {{ error }}
       </v-alert>
 
+      <v-alert
+        v-if="templateError"
+        type="warning"
+        variant="tonal"
+        closable
+        class="mb-6"
+        @click:close="clearTemplateError"
+      >
+        {{ templateError }} Template IDs are shown as fallback labels.
+      </v-alert>
+
       <template v-if="loading">
         <div class="metric-grid">
           <v-skeleton-loader v-for="index in 2" :key="index" type="article" />
@@ -80,7 +91,8 @@
                   <td>
                     <div class="template-name">
                       <video
-                        :src="templateVideos[summary.template]"
+                        v-if="summary.exampleVideoUrl"
+                        :src="summary.exampleVideoUrl"
                         :aria-label="`${summary.label} video example`"
                         class="template-performance-preview"
                         autoplay
@@ -89,6 +101,9 @@
                         playsinline
                         preload="metadata"
                       ></video>
+                      <div v-else class="template-performance-preview template-performance-preview--empty">
+                        <v-icon icon="mdi-video-outline" size="20" />
+                      </div>
                       <span>{{ summary.label }}</span>
                     </div>
                   </td>
@@ -118,7 +133,7 @@
               <div class="recent-row__title">
                 <span class="text-truncate">{{ job.track?.name || job.postId.slice(0, 8) }}</span>
                 <small>
-                  {{ templateLabel(job.template) }} ·
+                  {{ templateName(job.template) }} ·
                   {{ formatRelativeDate(job.finishedAt || job.triggeredAt) }}
                 </small>
               </div>
@@ -141,26 +156,11 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted } from 'vue'
-import musicVisualizerVideo from '@/assets/templates/music-visualizer-preview.mp4'
-import orbitVideo from '@/assets/templates/orbit-preview.mp4'
-import prismVideo from '@/assets/templates/prism-spectrum-preview.mp4'
-import threeDimensionalVideo from '@/assets/templates/3d-style-preview.mp4'
-import vinylOrbitVideo from '@/assets/templates/vinyl-orbit-preview.mp4'
-import vinylSleeveVideo from '@/assets/templates/vinyl-sleeve-preview.mp4'
 import CoverSectionNav from '@/components/CoverSectionNav.vue'
 import { useTrackVideoJobs } from '@/composables/useTrackVideoJobs'
-import { templateLabel, type TrackVideoTemplate } from '@/types/trackVideo'
+import { useVideoTemplates } from '@/composables/useVideoTemplates'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
 import { summarizeByTemplate, summarizeTimings } from '@/utils/insights'
-
-const templateVideos: Record<TrackVideoTemplate, string> = {
-  orbit: orbitVideo,
-  'prism-spectrum': prismVideo,
-  '3d-style': threeDimensionalVideo,
-  'music-visualizer': musicVisualizerVideo,
-  'vinyl-orbit': vinylOrbitVideo,
-  'vinyl-sleeve': vinylSleeveVideo,
-}
 
 const {
   jobs,
@@ -173,12 +173,20 @@ const {
   stopPolling,
 } = useTrackVideoJobs()
 
+const {
+  templates: videoTemplates,
+  error: templateError,
+  loadTemplates,
+  templateName,
+  clearError: clearTemplateError,
+} = useVideoTemplates()
+
 const completedJobs = computed(() => jobs.value.filter(job => job.status === 'completed'))
 
 const totalTimings = computed(() => summarizeTimings(
   completedJobs.value.map(job => job.totalDurationMs),
 ))
-const templateSummaries = computed(() => summarizeByTemplate(jobs.value))
+const templateSummaries = computed(() => summarizeByTemplate(jobs.value, videoTemplates.value))
 const recentCompleted = computed(() => completedJobs.value.slice(0, 50))
 const recentMaximum = computed(() => Math.max(
   ...recentCompleted.value.map(job => job.totalDurationMs || 0),
@@ -193,7 +201,7 @@ function recentBarWidth(value: number | null): number {
 }
 
 onMounted(() => {
-  void loadJobs()
+  void Promise.all([loadTemplates(), loadJobs()])
 })
 
 onBeforeUnmount(stopPolling)
@@ -445,6 +453,12 @@ td {
   border: 1px solid rgba(var(--v-theme-on-surface), 0.12);
   border-radius: 8px;
   box-shadow: 0 7px 16px rgba(0, 0, 0, 0.28);
+}
+
+.template-performance-preview--empty {
+  display: grid;
+  place-items: center;
+  color: rgba(var(--v-theme-on-surface), 0.34);
 }
 
 @media (max-width: 620px) {

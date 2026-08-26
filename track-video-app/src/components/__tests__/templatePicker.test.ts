@@ -14,6 +14,18 @@ describe('TemplatePicker', () => {
     const wrapper = mount(TemplatePicker, {
       props: {
         modelValue: 'vinyl-orbit',
+        templates: [
+          {
+            id: 'vinyl-orbit',
+            name: 'Vinyl Launch',
+            exampleVideoUrls: ['vinyl-1.mp4', 'vinyl-2.mp4', 'vinyl-3.mp4', 'vinyl-4.mp4'],
+          },
+          {
+            id: 'vinyl-sleeve',
+            name: 'Vinyl Sleeve',
+            exampleVideoUrls: ['sleeve-1.mp4', 'sleeve-2.mp4', 'sleeve-3.mp4', 'sleeve-4.mp4'],
+          },
+        ],
       },
       global: {
         stubs: {
@@ -22,8 +34,13 @@ describe('TemplatePicker', () => {
       },
     })
 
-    expect(wrapper.find('.selected-template').text()).toContain('Vinyl')
-    expect(wrapper.findAll('.template-card')).toHaveLength(6)
+    expect(wrapper.find('.selected-template').text()).toContain('Vinyl Launch')
+    expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-1.mp4')
+    expect(wrapper.findAll('.example-button')).toHaveLength(4)
+    expect(wrapper.findAll('.template-card')).toHaveLength(2)
+
+    await wrapper.findAll('.example-button')[2].trigger('click')
+    expect(wrapper.find('.selected-template__video').attributes('src')).toBe('vinyl-3.mp4')
 
     const vinylSleeve = wrapper.findAll('.template-card')
       .find(card => card.text().includes('Vinyl Sleeve'))
@@ -33,5 +50,6 @@ describe('TemplatePicker', () => {
 
     await wrapper.setProps({ modelValue: 'vinyl-sleeve' })
     expect(wrapper.find('.selected-template').text()).toContain('Vinyl Sleeve')
+    expect(wrapper.find('.selected-template__video').attributes('src')).toBe('sleeve-1.mp4')
   })
 })

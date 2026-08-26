@@ -1,5 +1,9 @@
-import type { TrackVideoJob, TrackVideoTemplate } from '@/types/trackVideo'
-import { VIDEO_TEMPLATES } from '@/types/trackVideo'
+import type {
+  TrackVideoJob,
+  TrackVideoTemplate,
+  VideoTemplateCatalogueItem,
+} from '@/types/trackVideo'
+import { fallbackTemplateName } from '@/types/trackVideo'
 
 export interface TimingSummary {
   average: number | null
@@ -9,6 +13,7 @@ export interface TimingSummary {
 export interface TemplateSummary {
   template: TrackVideoTemplate
   label: string
+  exampleVideoUrl: string | null
   total: number
   averageTotalMs: number | null
   p95TotalMs: number | null
@@ -40,15 +45,31 @@ export function summarizeTimings(values: Array<number | null>): TimingSummary {
   }
 }
 
-export function summarizeByTemplate(jobs: TrackVideoJob[]): TemplateSummary[] {
-  return VIDEO_TEMPLATES.map(template => {
-    const matchingJobs = jobs.filter(job => job.template === template.value)
+export function summarizeByTemplate(
+  jobs: TrackVideoJob[],
+  templates: VideoTemplateCatalogueItem[],
+): TemplateSummary[] {
+  const knownIds = new Set(templates.map(template => template.id))
+  const historicTemplates = jobs
+    .map(job => job.template)
+    .filter((template, index, values) => (
+      !knownIds.has(template) && values.indexOf(template) === index
+    ))
+    .map(template => ({
+      id: template,
+      name: fallbackTemplateName(template),
+      exampleVideoUrls: [],
+    }))
+
+  return [...templates, ...historicTemplates].map(template => {
+    const matchingJobs = jobs.filter(job => job.template === template.id)
     const completedJobs = matchingJobs.filter(job => job.status === 'completed')
     const total = summarizeTimings(completedJobs.map(job => job.totalDurationMs))
 
     return {
-      template: template.value,
-      label: template.label,
+      template: template.id,
+      label: template.name,
+      exampleVideoUrl: template.exampleVideoUrls[0] || null,
       total: matchingJobs.length,
       averageTotalMs: total.average,
       p95TotalMs: total.p95,

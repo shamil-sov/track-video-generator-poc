@@ -4,6 +4,8 @@ import type {
   JobsPage,
   TrackVideoJob,
   TrackVideoTemplate,
+  VideoTemplateCatalogue,
+  VideoTemplateCatalogueItem,
 } from '@/types/trackVideo'
 import type {
   AiImageCatalogue,
@@ -25,6 +27,7 @@ export const API_BASE_URL = (
 ).replace(/\/$/, '')
 
 const JOBS_URL = `${API_BASE_URL}/track-video-generator/jobs`
+const VIDEO_TEMPLATES_URL = `${API_BASE_URL}/track-video-generator/video-templates`
 
 const AI_IMAGE_API_URL = `${API_BASE_URL}/track-video-generator`
 const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
@@ -98,6 +101,11 @@ export async function getAllJobs(): Promise<TrackVideoJob[]> {
   } while (after)
 
   return jobs
+}
+
+export async function getVideoTemplates(): Promise<VideoTemplateCatalogueItem[]> {
+  const response = await fetch(VIDEO_TEMPLATES_URL)
+  return (await parseResponse<VideoTemplateCatalogue>(response)).data
 }
 
 export async function getAiImageVisualStyles(): Promise<AiImageVisualStyle[]> {

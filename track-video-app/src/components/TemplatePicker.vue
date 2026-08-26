@@ -3,9 +3,10 @@
     <section class="selected-template" aria-live="polite">
       <div class="selected-template__media">
         <video
-          :src="templateVideos[selectedTemplate.value]"
-          :poster="templateImages[selectedTemplate.value]"
-          :aria-label="`${selectedTemplate.label} selected video template preview`"
+          v-if="selectedPreviewUrl"
+          :key="selectedPreviewUrl"
+          :src="selectedPreviewUrl"
+          :aria-label="`${selectedTemplate.name} selected video template preview ${selectedPreviewIndex + 1}`"
           class="selected-template__video"
           autoplay
           loop
@@ -13,42 +14,66 @@
           playsinline
           preload="metadata"
         ></video>
+        <div v-else class="template-video-placeholder">
+          <v-icon icon="mdi-video-outline" size="38" />
+        </div>
       </div>
 
       <div class="selected-template__copy">
         <span>Selected video template</span>
-        <strong>{{ selectedTemplate.label }}</strong>
-        <p>{{ selectedTemplate.description }}</p>
-        <small>
+        <strong>{{ selectedTemplate.name }}</strong>
+        <p>Preview this template across different tracks.</p>
+
+        <div
+          v-if="selectedTemplate.exampleVideoUrls.length > 1"
+          class="example-switcher"
+          role="group"
+          :aria-label="`${selectedTemplate.name} examples`"
+        >
+          <button
+            v-for="(_, index) in selectedTemplate.exampleVideoUrls"
+            :key="index"
+            type="button"
+            class="example-button"
+            :class="{ 'example-button--selected': selectedPreviewIndex === index }"
+            :aria-pressed="selectedPreviewIndex === index"
+            :aria-label="`Show example ${index + 1}`"
+            @click="selectedPreviewIndex = index"
+          >
+            {{ index + 1 }}
+          </button>
+        </div>
+
+        <small v-if="selectedTemplate.exampleVideoUrls.length">
           <v-icon icon="mdi-play-circle-outline" size="16" />
-          Live motion preview
+          Example {{ selectedPreviewIndex + 1 }} of {{ selectedTemplate.exampleVideoUrls.length }}
         </small>
       </div>
     </section>
 
     <div class="template-options-heading">
       <strong>Choose a video template</strong>
-      <span>{{ VIDEO_TEMPLATES.length }} templates</span>
+      <span>{{ props.templates.length }} templates</span>
     </div>
 
     <div class="template-grid" role="radiogroup" aria-label="Video style">
       <button
-        v-for="template in VIDEO_TEMPLATES"
-        :key="template.value"
+        v-for="template in props.templates"
+        :key="template.id"
         type="button"
         class="template-card"
         :class="[
-          `template-card--${template.value}`,
-          { 'template-card--selected': model === template.value },
+          `template-card--${template.id}`,
+          { 'template-card--selected': model === template.id },
         ]"
         role="radio"
-        :aria-checked="model === template.value"
-        @click="model = template.value"
+        :aria-checked="model === template.id"
+        @click="model = template.id"
       >
         <video
-          :src="templateVideos[template.value]"
-          :poster="templateImages[template.value]"
-          :aria-label="`${template.label} video example`"
+          v-if="template.exampleVideoUrls[0]"
+          :src="template.exampleVideoUrls[0]"
+          :aria-label="`${template.name} video example`"
           class="template-preview"
           autoplay
           loop
@@ -56,12 +81,15 @@
           playsinline
           preload="metadata"
         ></video>
+        <div v-else class="template-video-placeholder">
+          <v-icon icon="mdi-video-outline" size="28" />
+        </div>
 
         <span class="template-shade"></span>
-        <span class="template-name">{{ template.label }}</span>
+        <span class="template-name">{{ template.name }}</span>
         <span class="template-check">
           <v-icon
-            :icon="model === template.value ? 'mdi-check-circle' : 'mdi-circle-outline'"
+            :icon="model === template.id ? 'mdi-check-circle' : 'mdi-circle-outline'"
             size="21"
           />
         </span>
@@ -71,43 +99,24 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import musicVisualizerThumbnail from '@/assets/templates/music-visualizer.jpg'
-import musicVisualizerVideo from '@/assets/templates/music-visualizer-preview.mp4'
-import orbitThumbnail from '@/assets/templates/orbit.jpg'
-import orbitVideo from '@/assets/templates/orbit-preview.mp4'
-import prismThumbnail from '@/assets/templates/prism-spectrum.jpg'
-import prismVideo from '@/assets/templates/prism-spectrum-preview.mp4'
-import threeDimensionalThumbnail from '@/assets/templates/3d-style.jpg'
-import threeDimensionalVideo from '@/assets/templates/3d-style-preview.mp4'
-import vinylOrbitThumbnail from '@/assets/templates/vinyl-orbit.jpg'
-import vinylOrbitVideo from '@/assets/templates/vinyl-orbit-preview.mp4'
-import vinylSleeveThumbnail from '@/assets/templates/vinyl-sleeve.jpg'
-import vinylSleeveVideo from '@/assets/templates/vinyl-sleeve-preview.mp4'
-import { VIDEO_TEMPLATES, type TrackVideoTemplate } from '@/types/trackVideo'
+import { computed, ref, watch } from 'vue'
+import type { TrackVideoTemplate, VideoTemplateCatalogueItem } from '@/types/trackVideo'
 
+const props = defineProps<{
+  templates: VideoTemplateCatalogueItem[]
+}>()
 const model = defineModel<TrackVideoTemplate>({ required: true })
 const selectedTemplate = computed(() => (
-  VIDEO_TEMPLATES.find(template => template.value === model.value) || VIDEO_TEMPLATES[0]
+  props.templates.find(template => template.id === model.value) || props.templates[0]
+))
+const selectedPreviewIndex = ref(0)
+const selectedPreviewUrl = computed(() => (
+  selectedTemplate.value?.exampleVideoUrls[selectedPreviewIndex.value] || null
 ))
 
-const templateImages: Record<TrackVideoTemplate, string> = {
-  orbit: orbitThumbnail,
-  'prism-spectrum': prismThumbnail,
-  '3d-style': threeDimensionalThumbnail,
-  'music-visualizer': musicVisualizerThumbnail,
-  'vinyl-orbit': vinylOrbitThumbnail,
-  'vinyl-sleeve': vinylSleeveThumbnail,
-}
-
-const templateVideos: Record<TrackVideoTemplate, string> = {
-  orbit: orbitVideo,
-  'prism-spectrum': prismVideo,
-  '3d-style': threeDimensionalVideo,
-  'music-visualizer': musicVisualizerVideo,
-  'vinyl-orbit': vinylOrbitVideo,
-  'vinyl-sleeve': vinylSleeveVideo,
-}
+watch(model, () => {
+  selectedPreviewIndex.value = 0
+})
 </script>
 
 <style scoped>
@@ -147,6 +156,15 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
   object-position: center;
 }
 
+.template-video-placeholder {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.34);
+  background: #101116;
+}
+
 .selected-template__copy {
   display: flex;
   align-items: flex-start;
@@ -182,6 +200,36 @@ const templateVideos: Record<TrackVideoTemplate, string> = {
   margin-top: 20px;
   color: rgba(var(--v-theme-on-surface), 0.45);
   font-size: 0.7rem;
+}
+
+.example-switcher {
+  display: flex;
+  gap: 7px;
+  margin-top: 18px;
+}
+
+.example-button {
+  display: grid;
+  width: 34px;
+  height: 30px;
+  place-items: center;
+  color: rgba(var(--v-theme-on-surface), 0.55);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 760;
+  background: rgba(var(--v-theme-on-surface), 0.06);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.09);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.example-button:hover,
+.example-button:focus-visible,
+.example-button--selected {
+  color: rgb(var(--v-theme-on-primary));
+  background: rgb(var(--v-theme-primary));
+  border-color: rgb(var(--v-theme-primary));
+  outline: none;
 }
 
 .template-options-heading {

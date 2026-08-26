@@ -29,7 +29,7 @@
           prepend-icon="mdi-palette-outline"
           class="job-style"
         >
-          {{ templateLabel(props.job.template) }}
+          {{ displayedTemplateName }}
         </v-chip>
       </div>
 
@@ -64,7 +64,7 @@
     <v-card class="details-card" rounded="xl">
       <div class="details-header">
         <div>
-          <div class="details-eyebrow">{{ templateLabel(props.job.template) }}</div>
+          <div class="details-eyebrow">{{ displayedTemplateName }}</div>
           <h2 class="details-title">{{ title }}</h2>
         </div>
         <v-btn
@@ -218,7 +218,7 @@
 import { computed, ref } from 'vue'
 import StatusChip from '@/components/StatusChip.vue'
 import type { TrackVideoJob } from '@/types/trackVideo'
-import { templateLabel } from '@/types/trackVideo'
+import { fallbackTemplateName } from '@/types/trackVideo'
 import {
   formatDate,
   formatDuration,
@@ -227,9 +227,13 @@ import {
 
 const props = defineProps<{
   job: TrackVideoJob
+  templateName?: string
 }>()
 
 const detailsOpen = ref(false)
+const displayedTemplateName = computed(() => (
+  props.templateName || fallbackTemplateName(props.job.template)
+))
 const title = computed(() => props.job.track?.name || `Track ${props.job.postId.slice(0, 8)}`)
 const coverImage = computed(() => props.job.track?.pictureUrl || null)
 const placeholderText = computed(() => {
