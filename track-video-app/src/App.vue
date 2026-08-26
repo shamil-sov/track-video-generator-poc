@@ -35,6 +35,15 @@
             AI-image videos
           </v-btn>
           <v-btn
+            :to="{ name: 'style-explorer' }"
+            :variant="route.name === 'style-explorer' ? 'tonal' : 'text'"
+            rounded="lg"
+            prepend-icon="mdi-palette-swatch-outline"
+            aria-label="Visual style explorer"
+          >
+            Style explorer
+          </v-btn>
+          <v-btn
             :to="{ name: 'insights' }"
             :variant="route.name === 'insights' ? 'tonal' : 'text'"
             rounded="lg"
@@ -74,6 +83,14 @@
             rel="noopener"
           >
             AI-image API
+            <v-icon icon="mdi-open-in-new" size="13" />
+          </a>
+          <a
+            href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3/track-video-generator/ai-image-jobs?limit=50"
+            target="_blank"
+            rel="noopener"
+          >
+            Style explorer API
             <v-icon icon="mdi-open-in-new" size="13" />
           </a>
         </div>
@@ -214,9 +231,11 @@ const route = useRoute()
 .app-footer__links {
   display: flex;
   gap: 16px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
-@media (max-width: 820px) {
+@media (max-width: 1040px) {
   .app-nav :deep(.v-btn__prepend) {
     margin-inline-end: 0;
   }

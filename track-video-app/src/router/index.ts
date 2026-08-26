@@ -20,6 +20,11 @@ const router = createRouter({
       name: 'ai-image-videos',
       component: () => import('@/views/AiImageVideosView.vue'),
     },
+    {
+      path: '/style-explorer',
+      name: 'style-explorer',
+      component: () => import('@/views/StyleExplorerView.vue'),
+    },
   ],
 })
 

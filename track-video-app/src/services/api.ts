@@ -13,6 +13,11 @@ import type {
   AiImageVisualStyle,
   CreateAiImageVideoJobResult,
 } from '@/types/aiImageTrackVideo'
+import type {
+  AiGeneratedImageJob,
+  AiGeneratedImageJobsPage,
+  CreateAiGeneratedImageJobResult,
+} from '@/types/aiImageGeneration'
 
 export const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL
@@ -25,6 +30,7 @@ const AI_IMAGE_API_URL = `${API_BASE_URL}/track-video-generator`
 const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
 const AI_IMAGE_TEMPLATES_URL = `${AI_IMAGE_API_URL}/ai-image-video-templates`
 const AI_IMAGE_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-video-jobs`
+const AI_IMAGE_GENERATION_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-jobs`
 const HIDDEN_AI_IMAGE_VISUAL_STYLE_IDS = new Set([
   'moire-rotor-ballet',
   'schlieren-flow-study',
@@ -145,5 +151,37 @@ export async function getAiImageVideoJobs(): Promise<AiImageVideoJob[]> {
   url.searchParams.set('limit', '50')
 
   const page = await parseResponse<AiImageVideoJobsPage>(await fetch(url))
+  return page.data
+}
+
+export async function createAiGeneratedImageJob(
+  prompt: string,
+  trackUrl?: string,
+): Promise<CreateAiGeneratedImageJobResult> {
+  const normalizedTrackUrl = trackUrl?.trim()
+  const response = await fetch(AI_IMAGE_GENERATION_JOBS_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt: prompt.trim(),
+      ...(normalizedTrackUrl ? { trackUrl: normalizedTrackUrl } : {}),
+    }),
+  })
+
+  return parseResponse<CreateAiGeneratedImageJobResult>(response)
+}
+
+export async function getAiGeneratedImageJob(jobId: string): Promise<AiGeneratedImageJob> {
+  const response = await fetch(`${AI_IMAGE_GENERATION_JOBS_URL}/${encodeURIComponent(jobId)}`)
+  return parseResponse<AiGeneratedImageJob>(response)
+}
+
+export async function getAiGeneratedImageJobs(): Promise<AiGeneratedImageJob[]> {
+  const url = new URL(AI_IMAGE_GENERATION_JOBS_URL)
+  url.searchParams.set('limit', '50')
+
+  const page = await parseResponse<AiGeneratedImageJobsPage>(await fetch(url))
   return page.data
 }

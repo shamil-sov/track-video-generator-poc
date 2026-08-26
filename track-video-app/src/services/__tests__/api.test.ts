@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { getAiImageVisualStyles } from '@/services/api'
+import {
+  createAiGeneratedImageJob,
+  getAiGeneratedImageJobs,
+  getAiImageVisualStyles,
+} from '@/services/api'
 
-describe('getAiImageVisualStyles', () => {
+describe('API client', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
@@ -51,5 +55,42 @@ describe('getAiImageVisualStyles', () => {
     const styles = await getAiImageVisualStyles()
 
     expect(styles.map(style => style.id)).toEqual(['living-impasto'])
+  })
+
+  it('submits a trimmed image prompt with optional track context', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      jobId: 'image-job',
+      status: 'queued',
+      triggeredAt: '2026-08-26T10:00:00Z',
+    }), { status: 202 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createAiGeneratedImageJob(
+      '  Cover art for {trackName}  ',
+      '  https://test.bandlab.com/track/5f42bf92-e3de-ed11-8aae-501ac5ee31b6  ',
+    )
+
+    const [url, request] = fetchMock.mock.calls[0]
+    expect(String(url)).toContain('/track-video-generator/ai-image-jobs')
+    expect(JSON.parse(request.body)).toEqual({
+      prompt: 'Cover art for {trackName}',
+      trackUrl: 'https://test.bandlab.com/track/5f42bf92-e3de-ed11-8aae-501ac5ee31b6',
+    })
+  })
+
+  it('loads the latest 50 generated images', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: [],
+      paging: {
+        itemsCount: 0,
+        limit: 50,
+        cursors: { after: null },
+      },
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await getAiGeneratedImageJobs()
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain('ai-image-jobs?limit=50')
   })
 })
