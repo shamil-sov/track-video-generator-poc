@@ -44,7 +44,7 @@
           </v-chip>
         </div>
 
-        <form class="track-start-form" @submit.prevent="openWizard">
+        <form class="track-start-form" @submit.prevent="handleSubmit">
           <div class="track-url-field">
             <v-text-field
               v-model="trackUrl"
@@ -59,7 +59,7 @@
               autocomplete="url"
               @blur="urlTouched = true"
             />
-            <p>Choose how the generated artwork should move, then continue to the visual style.</p>
+            <p>Choose the motion template and AI visual style below.</p>
           </div>
 
           <div class="field-heading">
@@ -81,15 +81,38 @@
             Video templates are currently unavailable. Refresh to try loading the catalogue again.
           </v-alert>
 
+          <div class="field-heading field-heading--visual">
+            <div>
+              <span>AI visual style</span>
+              <small>Browse the example images, then choose the art direction.</small>
+            </div>
+          </div>
+
+          <div v-if="cataloguesLoading" class="style-loading">
+            <v-skeleton-loader type="image, article" />
+            <div>
+              <v-skeleton-loader v-for="index in 6" :key="index" type="image" />
+            </div>
+          </div>
+          <AiVisualStylePicker
+            v-else-if="visualStyles.length"
+            v-model="selectedVisualStyle"
+            :styles="visualStyles"
+          />
+          <v-alert v-else type="warning" variant="tonal" density="compact">
+            Visual styles are currently unavailable. Refresh to try loading the catalogue again.
+          </v-alert>
+
           <div class="generator-footer">
-            <p>Your final step is choosing the AI visual style.</p>
+            <p>Creates a 15-second video from the start of the track.</p>
             <v-btn
               type="submit"
               color="primary"
               size="large"
               rounded="lg"
               prepend-icon="mdi-image-sparkles-outline"
-              :disabled="submitting || cataloguesLoading || !selectedTemplate"
+              :loading="submitting"
+              :disabled="submitting || cataloguesLoading || !selectedTemplate || !selectedVisualStyle"
             >
               Generate
             </v-btn>
@@ -98,7 +121,7 @@
       </v-card>
 
       <v-alert
-        v-if="error && !wizardOpen"
+        v-if="error"
         type="error"
         variant="tonal"
         closable
@@ -200,7 +223,7 @@
           <p>
             {{ jobs.length
               ? 'Try clearing one of the filters.'
-              : 'Paste a public BandLab track above, choose a video template, then select the visual style.' }}
+              : 'Paste a public BandLab track above, choose a video template and visual style, then generate.' }}
           </p>
           <v-btn
             v-if="hasFilters"
@@ -267,16 +290,6 @@
       </section>
     </v-container>
 
-    <AiImageGenerationWizard
-      v-model="wizardOpen"
-      :visual-styles="visualStyles"
-      :catalogues-loading="cataloguesLoading"
-      :submitting="submitting"
-      :error="error"
-      @clear-error="clearError"
-      @submit="handleWizardSubmit"
-    />
-
     <v-snackbar v-model="showSuccess" color="success" :timeout="4500">
       <v-icon icon="mdi-check-circle" class="mr-2" />
       AI-image job created. This page will refresh while it renders.
@@ -286,9 +299,9 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import AiImageGenerationWizard from '@/components/AiImageGenerationWizard.vue'
 import AiImageJobCard from '@/components/AiImageJobCard.vue'
 import AiVideoTemplatePicker from '@/components/AiVideoTemplatePicker.vue'
+import AiVisualStylePicker from '@/components/AiVisualStylePicker.vue'
 import { useAiImageVideoJobs } from '@/composables/useAiImageVideoJobs'
 import type { TrackVideoJobStatus } from '@/types/trackVideo'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
@@ -315,9 +328,9 @@ const {
 
 const trackUrl = ref('')
 const selectedTemplate = ref<string | null>(null)
+const selectedVisualStyle = ref<string | null>(null)
 const urlTouched = ref(false)
 const showSuccess = ref(false)
-const wizardOpen = ref(false)
 const search = ref('')
 const statusFilter = ref<'all' | TrackVideoJobStatus>('all')
 const templateFilter = ref('all')
@@ -452,30 +465,23 @@ function visualStyleName(id: string): string {
   return visualStyles.value.find(style => style.id === id)?.name || id
 }
 
-function openWizard(): void {
+async function handleSubmit(): Promise<void> {
   urlTouched.value = true
-  if (rawTrackUrlError.value || !selectedTemplate.value) {
+  if (
+    rawTrackUrlError.value
+    || !selectedTemplate.value
+    || !selectedVisualStyle.value
+  ) {
     return
   }
 
   clearError()
-  wizardOpen.value = true
-}
-
-async function handleWizardSubmit(selection: {
-  visualStyle: string
-}): Promise<void> {
-  if (!selectedTemplate.value) {
-    return
-  }
-
   const created = await submitJob(
     trackUrl.value.trim(),
     selectedTemplate.value,
-    selection.visualStyle,
+    selectedVisualStyle.value,
   )
   if (created) {
-    wizardOpen.value = false
     showSuccess.value = true
     trackUrl.value = ''
     urlTouched.value = false
@@ -687,10 +693,21 @@ onBeforeUnmount(stopPolling)
   font-size: 0.69rem;
 }
 
+.field-heading--visual {
+  margin-top: 36px;
+}
+
 .template-loading {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
+}
+
+.style-loading > div:last-child {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 12px;
 }
 
 .generator-footer {

@@ -58,28 +58,35 @@
 
     <div class="catalogue-heading">
       <div>
-        <strong>Choose an image direction</strong>
-        <span>{{ filteredStyles.length }} styles</span>
+        <strong>Browse visual styles</strong>
+        <span>{{ styles.length }} styles</span>
       </div>
-      <v-text-field
-        v-model="search"
-        label="Search styles"
-        prepend-inner-icon="mdi-magnify"
-        variant="outlined"
-        density="compact"
-        hide-details
-        clearable
-      />
+      <div class="carousel-controls">
+        <v-btn
+          icon="mdi-chevron-left"
+          variant="tonal"
+          size="small"
+          aria-label="Scroll visual styles left"
+          @click="scrollStyles(-1)"
+        />
+        <v-btn
+          icon="mdi-chevron-right"
+          variant="tonal"
+          size="small"
+          aria-label="Scroll visual styles right"
+          @click="scrollStyles(1)"
+        />
+      </div>
     </div>
 
     <div
-      v-if="filteredStyles.length"
+      ref="styleCarousel"
       class="style-grid"
       role="radiogroup"
       aria-label="AI visual style"
     >
       <button
-        v-for="style in filteredStyles"
+        v-for="style in styles"
         :key="style.id"
         type="button"
         class="style-card"
@@ -119,11 +126,6 @@
         />
       </button>
     </div>
-
-    <div v-else class="empty-search">
-      <v-icon icon="mdi-image-search-outline" size="34" />
-      <span>No visual styles match “{{ search }}”.</span>
-    </div>
   </div>
 </template>
 
@@ -137,25 +139,34 @@ const props = defineProps<{
 }>()
 
 const model = defineModel<string | null>({ required: true })
-const search = ref<string | null>('')
 const activeImageIndex = ref(0)
+const styleCarousel = ref<HTMLDivElement | null>(null)
 const failedImages = reactive(new Set<string>())
 const styleButtons = new Map<string, HTMLButtonElement>()
 
 const selectedStyle = computed(() => props.styles.find(style => style.id === model.value) || null)
 const selectedImages = computed(() => selectedStyle.value?.exampleImageUrls || [])
 const activeImageUrl = computed(() => selectedImages.value[activeImageIndex.value] || null)
-const filteredStyles = computed(() => {
-  const query = (search.value || '').trim().toLowerCase()
-  if (!query) {
-    return props.styles
-  }
 
-  return props.styles.filter(style => style.name.toLowerCase().includes(query))
-})
+watch(
+  () => props.styles,
+  styles => {
+    if (!model.value && styles.length) {
+      model.value = styles[0].id
+    }
+  },
+  { immediate: true },
+)
 
 watch(model, () => {
   activeImageIndex.value = 0
+  void nextTick(() => {
+    styleButtons.get(model.value || '')?.scrollIntoView?.({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+  })
 })
 
 function setStyleButton(
@@ -170,7 +181,7 @@ function setStyleButton(
 }
 
 function selectAdjacentStyle(id: string, offset: number): void {
-  const ids = filteredStyles.value.map(style => style.id)
+  const ids = props.styles.map(style => style.id)
   const currentIndex = ids.indexOf(id)
   const nextId = ids[(currentIndex + offset + ids.length) % ids.length]
   if (!nextId) {
@@ -179,6 +190,18 @@ function selectAdjacentStyle(id: string, offset: number): void {
 
   model.value = nextId
   void nextTick(() => styleButtons.get(nextId)?.focus())
+}
+
+function scrollStyles(direction: -1 | 1): void {
+  const carousel = styleCarousel.value
+  if (!carousel) {
+    return
+  }
+
+  carousel.scrollBy({
+    left: direction * Math.max(carousel.clientWidth * 0.75, 280),
+    behavior: 'smooth',
+  })
 }
 
 function showPreviousImage(): void {
@@ -299,14 +322,14 @@ function showNextImage(): void {
 }
 
 .catalogue-heading {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
+  display: flex;
   gap: 16px;
   align-items: center;
+  justify-content: space-between;
   margin-top: 2px;
 }
 
-.catalogue-heading > div {
+.catalogue-heading > div:first-child {
   display: flex;
   flex-direction: column;
 }
@@ -320,19 +343,26 @@ function showNextImage(): void {
   font-size: 0.7rem;
 }
 
+.carousel-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .style-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  display: flex;
   gap: 10px;
-  align-items: start;
-  max-height: 500px;
-  padding: 3px 5px 3px 3px;
-  overflow: auto;
+  padding: 3px 5px 10px 3px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
 }
 
 .style-card {
   position: relative;
-  min-width: 0;
+  flex: 0 0 132px;
   aspect-ratio: 9 / 16;
   padding: 0;
   overflow: hidden;
@@ -342,6 +372,7 @@ function showNextImage(): void {
   background: #15171c;
   border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
   border-radius: 14px;
+  scroll-snap-align: start;
   transition: 160ms ease;
 }
 
@@ -402,8 +433,7 @@ function showNextImage(): void {
   backdrop-filter: blur(8px);
 }
 
-.image-placeholder,
-.empty-search {
+.image-placeholder {
   display: flex;
   gap: 8px;
   align-items: center;
@@ -415,30 +445,13 @@ function showNextImage(): void {
     #15171c;
 }
 
-.empty-search {
-  min-height: 150px;
-  border: 1px dashed rgba(var(--v-theme-on-surface), 0.13);
-  border-radius: 16px;
-}
-
-@media (max-width: 1000px) {
-  .style-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 620px) {
   .selected-preview {
     grid-template-columns: 125px minmax(0, 1fr);
   }
 
-  .catalogue-heading {
-    grid-template-columns: 1fr;
-  }
-
-  .style-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-height: 430px;
+  .style-card {
+    flex-basis: 116px;
   }
 }
 </style>

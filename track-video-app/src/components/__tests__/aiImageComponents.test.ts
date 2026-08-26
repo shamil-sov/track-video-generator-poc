@@ -3,7 +3,6 @@
 import { defineComponent } from 'vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import AiImageGenerationWizard from '@/components/AiImageGenerationWizard.vue'
 import AiImageJobCard from '@/components/AiImageJobCard.vue'
 import AiVideoTemplatePicker from '@/components/AiVideoTemplatePicker.vue'
 import AiVisualStylePicker from '@/components/AiVisualStylePicker.vue'
@@ -137,42 +136,26 @@ describe('AI-image picker components', () => {
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['orbit'])
   })
 
-  it('submits after the user chooses a visual style', async () => {
-    const wrapper = mount(AiImageGenerationWizard, {
+  it('preselects the first visual style and exposes carousel controls', () => {
+    const wrapper = mount(AiVisualStylePicker, {
       props: {
-        modelValue: true,
-        visualStyles: [
+        modelValue: null,
+        styles: [
           { id: 'living-impasto', name: 'Living Impasto', exampleImageUrls: ['https://cdn.example/style.jpg'] },
+          { id: 'paper-cut', name: 'Paper Cut', exampleImageUrls: ['https://cdn.example/paper.jpg'] },
         ],
-        cataloguesLoading: false,
-        submitting: false,
-        error: null,
       },
       global: {
         stubs: {
-          VDialog: dialogStub,
-          VCard: cardStub,
-          VCardText: passthroughStub,
           VImg: imageStub,
           VIcon: passthroughStub,
           VBtn: buttonStub,
-          VTextField: passthroughStub,
-          VAlert: passthroughStub,
         },
       },
     })
 
-    expect(wrapper.text()).toContain('Choose a visual style')
-    await wrapper.find('.style-card').trigger('click')
-
-    const generateButton = wrapper.findAll('.wizard-actions button')
-      .find(button => button.text().includes('Generate video'))
-    expect(generateButton).toBeDefined()
-    await generateButton!.trigger('click')
-
-    expect(wrapper.emitted('submit')?.at(-1)).toEqual([{
-      visualStyle: 'living-impasto',
-    }])
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['living-impasto'])
+    expect(wrapper.findAll('.carousel-controls button')).toHaveLength(2)
   })
 })
 
