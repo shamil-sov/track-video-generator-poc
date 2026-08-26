@@ -18,7 +18,7 @@
         <nav class="app-nav" aria-label="Main navigation">
           <v-btn
             :to="{ name: 'home' }"
-            :variant="route.name === 'home' ? 'tonal' : 'text'"
+            :variant="route.name === 'home' || route.name === 'insights' ? 'tonal' : 'text'"
             rounded="lg"
             prepend-icon="mdi-movie-open-outline"
             aria-label="Cover videos"
@@ -42,15 +42,6 @@
             aria-label="Visual style explorer"
           >
             Style explorer
-          </v-btn>
-          <v-btn
-            :to="{ name: 'insights' }"
-            :variant="route.name === 'insights' ? 'tonal' : 'text'"
-            rounded="lg"
-            prepend-icon="mdi-chart-box-outline"
-            aria-label="Cover-video insights"
-          >
-            Cover insights
           </v-btn>
         </nav>
 

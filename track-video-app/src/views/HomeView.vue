@@ -1,6 +1,8 @@
 <template>
   <main>
     <v-container class="page-container content-container">
+      <CoverSectionNav />
+
       <v-card class="generator-card" rounded="xl" elevation="0">
         <div class="generator-header">
           <div>
@@ -199,6 +201,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import CoverSectionNav from '@/components/CoverSectionNav.vue'
 import JobCard from '@/components/JobCard.vue'
 import TemplatePicker from '@/components/TemplatePicker.vue'
 import { useTrackVideoJobs } from '@/composables/useTrackVideoJobs'

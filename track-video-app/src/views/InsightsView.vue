@@ -1,6 +1,8 @@
 <template>
   <main class="insights-page">
     <v-container class="page-container py-10 py-md-14">
+      <CoverSectionNav />
+
       <div class="insights-header">
         <div>
           <div class="section-kicker">Performance insights</div>
@@ -145,6 +147,7 @@ import prismVideo from '@/assets/templates/prism-spectrum-preview.mp4'
 import threeDimensionalVideo from '@/assets/templates/3d-style-preview.mp4'
 import vinylOrbitVideo from '@/assets/templates/vinyl-orbit-preview.mp4'
 import vinylSleeveVideo from '@/assets/templates/vinyl-sleeve-preview.mp4'
+import CoverSectionNav from '@/components/CoverSectionNav.vue'
 import { useTrackVideoJobs } from '@/composables/useTrackVideoJobs'
 import { templateLabel, type TrackVideoTemplate } from '@/types/trackVideo'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
