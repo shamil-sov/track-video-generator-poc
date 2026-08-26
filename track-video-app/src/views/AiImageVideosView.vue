@@ -1,37 +1,5 @@
 <template>
   <main class="ai-page">
-    <section class="hero">
-      <v-container class="page-container">
-        <div class="hero-content">
-          <div>
-            <div class="eyebrow">
-              <span class="live-dot"></span>
-              AI-image experiment
-            </div>
-            <h1>Give your track a new world.</h1>
-            <p>
-              Choose an AI art direction and a motion template. We’ll create original portrait artwork, animate it to the track, and deliver a 15-second video.
-            </p>
-          </div>
-
-          <div class="hero-stats">
-            <div>
-              <strong>{{ jobs.length }}</strong>
-              <span>AI jobs</span>
-            </div>
-            <div>
-              <strong>{{ completedJobs.length }}</strong>
-              <span>Ready videos</span>
-            </div>
-            <div>
-              <strong>{{ activeJobCount }}</strong>
-              <span>In progress</span>
-            </div>
-          </div>
-        </div>
-      </v-container>
-    </section>
-
     <v-container class="page-container content-container">
       <v-card class="generator-card" rounded="xl" elevation="0">
         <div class="generator-header">
@@ -311,7 +279,6 @@ const {
   jobs,
   visualStyles,
   videoTemplates,
-  activeJobCount,
   jobsLoading,
   cataloguesLoading,
   refreshing,
@@ -511,109 +478,16 @@ onBeforeUnmount(stopPolling)
   min-height: calc(100vh - 68px);
 }
 
-.hero {
-  position: relative;
-  overflow: hidden;
-  padding: 68px 0 82px;
-  background:
-    radial-gradient(circle at 12% 24%, rgba(255, 95, 210, 0.14), transparent 28%),
-    radial-gradient(circle at 86% 12%, rgba(127, 140, 255, 0.24), transparent 30%),
-    linear-gradient(145deg, #11101a, #08090c 68%);
-}
-
-.hero::after {
-  position: absolute;
-  right: -5%;
-  bottom: -250px;
-  width: 560px;
-  height: 500px;
-  content: '';
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 46% 54% 68% 32% / 54% 42% 58% 46%;
-  box-shadow:
-    0 0 0 40px rgba(255, 95, 210, 0.025),
-    0 0 0 80px rgba(127, 140, 255, 0.018);
-  transform: rotate(-18deg);
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 64px;
-  align-items: end;
-}
-
-.eyebrow,
 .section-kicker {
-  color: #ff86dc;
+  color: #ff7667;
   font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.13em;
 }
 
-.eyebrow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.live-dot {
-  width: 7px;
-  height: 7px;
-  background: #ff86dc;
-  border-radius: 50%;
-  box-shadow: 0 0 0 5px rgba(255, 134, 220, 0.12);
-}
-
-.hero h1 {
-  max-width: 760px;
-  margin: 0;
-  color: #f7f8f4;
-  font-size: clamp(3rem, 7vw, 6.5rem);
-  font-weight: 820;
-  line-height: 0.92;
-  letter-spacing: -0.068em;
-}
-
-.hero p {
-  max-width: 700px;
-  margin: 28px 0 0;
-  color: rgba(247, 248, 244, 0.62);
-  font-size: clamp(1rem, 1.6vw, 1.18rem);
-  line-height: 1.65;
-}
-
-.hero-stats {
-  display: grid;
-  gap: 22px;
-  min-width: 150px;
-  padding-left: 28px;
-  border-left: 1px solid rgba(255, 255, 255, 0.13);
-}
-
-.hero-stats div {
-  display: flex;
-  flex-direction: column;
-}
-
-.hero-stats strong {
-  color: #f7f8f4;
-  font-size: 1.8rem;
-  line-height: 1;
-}
-
-.hero-stats span {
-  margin-top: 5px;
-  color: rgba(247, 248, 244, 0.45);
-  font-size: 0.72rem;
-}
-
 .content-container {
-  margin-top: -42px;
+  padding-top: 38px;
   padding-bottom: 80px;
 }
 
@@ -622,7 +496,7 @@ onBeforeUnmount(stopPolling)
   z-index: 2;
   padding: 28px;
   background:
-    linear-gradient(135deg, rgba(255, 95, 210, 0.05), transparent 32%),
+    linear-gradient(135deg, rgba(255, 92, 74, 0.075), transparent 34%),
     rgb(var(--v-theme-surface));
   border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.2) !important;
@@ -786,8 +660,8 @@ onBeforeUnmount(stopPolling)
   width: 76px;
   height: 76px;
   margin-bottom: 17px;
-  color: #ff86dc;
-  background: rgba(255, 134, 220, 0.1);
+  color: #ff7667;
+  background: rgba(255, 118, 103, 0.1);
   border-radius: 24px;
 }
 
@@ -825,9 +699,9 @@ onBeforeUnmount(stopPolling)
 .metric-card--primary {
   color: #f7f8f4;
   background:
-    radial-gradient(circle at 100% 0, rgba(255, 95, 210, 0.22), transparent 44%),
+    radial-gradient(circle at 100% 0, rgba(255, 92, 74, 0.24), transparent 44%),
     #16181d;
-  border-color: rgba(255, 134, 220, 0.2);
+  border-color: rgba(255, 118, 103, 0.22);
 }
 
 .metric-card span,
@@ -866,7 +740,7 @@ onBeforeUnmount(stopPolling)
 }
 
 .performance-table__header > div > span {
-  color: #ff86dc;
+  color: #ff7667;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -905,19 +779,6 @@ td {
 }
 
 @media (max-width: 1000px) {
-  .hero-content {
-    grid-template-columns: 1fr;
-    gap: 38px;
-  }
-
-  .hero-stats {
-    grid-template-columns: repeat(3, 1fr);
-    padding-top: 20px;
-    padding-left: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.13);
-    border-left: 0;
-  }
-
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -932,14 +793,6 @@ td {
 }
 
 @media (max-width: 620px) {
-  .hero {
-    padding: 52px 0 72px;
-  }
-
-  .hero h1 {
-    font-size: 3.3rem;
-  }
-
   .generator-card {
     padding: 20px;
   }

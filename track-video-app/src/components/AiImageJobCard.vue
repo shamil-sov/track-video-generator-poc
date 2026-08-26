@@ -319,8 +319,8 @@ watch(() => props.job.videoUrl, () => {
   place-items: center;
   color: rgba(255, 255, 255, 0.4);
   background:
-    radial-gradient(circle at 25% 24%, rgba(255, 95, 210, 0.32), transparent 28%),
-    radial-gradient(circle at 75% 70%, rgba(127, 140, 255, 0.38), transparent 30%),
+    radial-gradient(circle at 25% 24%, rgba(255, 92, 74, 0.32), transparent 28%),
+    radial-gradient(circle at 75% 70%, rgba(175, 45, 55, 0.38), transparent 30%),
     #15171c;
 }
 
@@ -465,7 +465,7 @@ watch(() => props.job.videoUrl, () => {
   min-height: 560px;
   padding: 22px;
   background:
-    radial-gradient(circle at 20% 20%, rgba(255, 95, 210, 0.18), transparent 32%),
+    radial-gradient(circle at 20% 20%, rgba(255, 92, 74, 0.18), transparent 32%),
     #0e0f13;
 }
 

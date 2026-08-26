@@ -183,7 +183,7 @@ onBeforeUnmount(() => {
   align-items: center;
   padding: 16px;
   background:
-    radial-gradient(circle at 0 0, rgba(127, 140, 255, 0.16), transparent 48%),
+    radial-gradient(circle at 0 0, rgba(255, 92, 74, 0.16), transparent 48%),
     rgba(var(--v-theme-on-surface), 0.035);
   border: 1px solid rgba(var(--v-theme-primary), 0.22);
   border-radius: 18px;

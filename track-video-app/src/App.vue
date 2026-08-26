@@ -54,10 +54,6 @@
           </v-btn>
         </nav>
 
-        <v-chip class="environment-chip" size="small" variant="tonal">
-          <span class="environment-dot"></span>
-          UAT
-        </v-chip>
       </v-container>
     </v-app-bar>
 
@@ -119,7 +115,7 @@ const route = useRoute()
 
 .app-bar__inner {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) auto minmax(80px, 1fr);
+  grid-template-columns: minmax(150px, 1fr) auto minmax(150px, 1fr);
   gap: 20px;
   align-items: center;
   height: 100%;
@@ -191,20 +187,6 @@ const route = useRoute()
   justify-self: center;
 }
 
-.environment-chip {
-  justify-self: end;
-  font-weight: 750;
-}
-
-.environment-dot {
-  width: 6px;
-  height: 6px;
-  margin-right: 7px;
-  background: #d7ff4f;
-  border-radius: 50%;
-  box-shadow: 0 0 8px rgba(215, 255, 79, 0.8);
-}
-
 .app-footer {
   background: #090a0d;
   color: rgba(247, 248, 244, 0.42);
@@ -252,10 +234,6 @@ const route = useRoute()
 
   .app-nav {
     justify-self: end;
-  }
-
-  .environment-chip {
-    display: none;
   }
 
   .app-footer__inner {
