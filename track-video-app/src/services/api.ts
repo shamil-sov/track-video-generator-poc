@@ -174,3 +174,14 @@ export async function getAiGeneratedImageJobs(): Promise<AiGeneratedImageJob[]> 
   const page = await parseResponse<AiGeneratedImageJobsPage>(await fetch(url))
   return page.data
 }
+
+export async function deleteAiGeneratedImageJob(jobId: string): Promise<void> {
+  const response = await fetch(
+    `${AI_IMAGE_GENERATION_JOBS_URL}/${encodeURIComponent(jobId)}`,
+    { method: 'DELETE' },
+  )
+
+  if (!response.ok) {
+    await parseResponse<unknown>(response)
+  }
+}

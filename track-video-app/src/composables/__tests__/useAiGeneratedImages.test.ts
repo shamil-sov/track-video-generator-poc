@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createAiGeneratedImageJob,
+  deleteAiGeneratedImageJob,
   getAiGeneratedImageJob,
   getAiGeneratedImageJobs,
 } from '@/services/api'
@@ -9,11 +10,13 @@ import type { AiGeneratedImageJob } from '@/types/aiImageGeneration'
 
 vi.mock('@/services/api', () => ({
   createAiGeneratedImageJob: vi.fn(),
+  deleteAiGeneratedImageJob: vi.fn(),
   getAiGeneratedImageJob: vi.fn(),
   getAiGeneratedImageJobs: vi.fn(),
 }))
 
 const createJobMock = vi.mocked(createAiGeneratedImageJob)
+const deleteJobMock = vi.mocked(deleteAiGeneratedImageJob)
 const getJobMock = vi.mocked(getAiGeneratedImageJob)
 const getJobsMock = vi.mocked(getAiGeneratedImageJobs)
 
@@ -85,5 +88,17 @@ describe('useAiGeneratedImages', () => {
       expect.objectContaining({ jobId: 'existing-image-job' }),
     ])
     state.stopPolling()
+  })
+
+  it('removes a deleted image from the shared gallery', async () => {
+    deleteJobMock.mockResolvedValue()
+
+    const state = useAiGeneratedImages()
+    state.jobs.value = [completedJob('delete-me')]
+
+    await expect(state.deleteJob('delete-me')).resolves.toBe(true)
+
+    expect(deleteJobMock).toHaveBeenCalledWith('delete-me')
+    expect(state.jobs.value).toEqual([])
   })
 })

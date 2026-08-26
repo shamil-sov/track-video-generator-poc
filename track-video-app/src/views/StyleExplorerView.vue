@@ -197,6 +197,8 @@
             v-for="job in filteredJobs"
             :key="job.jobId"
             :job="job"
+            :deleting="deletingJobIds.has(job.jobId)"
+            @delete="requestDelete"
           />
         </div>
 
@@ -220,9 +222,54 @@
       </section>
     </v-container>
 
+    <v-dialog v-model="deleteDialogOpen" max-width="460" :persistent="deletingCandidate">
+      <v-card class="delete-dialog" rounded="xl">
+        <div class="delete-dialog__icon">
+          <v-icon icon="mdi-delete-outline" size="28" />
+        </div>
+        <h2>Delete this exploration?</h2>
+        <p>
+          It will be removed from the shared visual gallery. This action cannot be undone.
+        </p>
+        <blockquote v-if="deleteCandidate">
+          {{ deleteCandidate.resolvedPrompt || deleteCandidate.promptTemplate }}
+        </blockquote>
+        <v-alert
+          v-if="error"
+          type="error"
+          variant="tonal"
+          density="compact"
+          class="mt-4 text-left"
+        >
+          {{ error }}
+        </v-alert>
+        <div class="delete-dialog__actions">
+          <v-btn
+            variant="text"
+            :disabled="deletingCandidate"
+            @click="closeDeleteDialog"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            color="error"
+            prepend-icon="mdi-delete-outline"
+            :loading="deletingCandidate"
+            @click="confirmDelete"
+          >
+            Delete image
+          </v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+
     <v-snackbar v-model="showSuccess" color="success" :timeout="4500">
       <v-icon icon="mdi-check-circle" class="mr-2" />
       Image job created. The gallery will update while it generates.
+    </v-snackbar>
+    <v-snackbar v-model="showDeleteSuccess" color="success" :timeout="3500">
+      <v-icon icon="mdi-check-circle" class="mr-2" />
+      Image exploration deleted.
     </v-snackbar>
   </main>
 </template>
@@ -231,6 +278,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AiGeneratedImageCard from '@/components/AiGeneratedImageCard.vue'
 import { useAiGeneratedImages } from '@/composables/useAiGeneratedImages'
+import type { AiGeneratedImageJob } from '@/types/aiImageGeneration'
 import type { TrackVideoJobStatus } from '@/types/trackVideo'
 import { formatRelativeDate } from '@/utils/formatters'
 
@@ -240,11 +288,13 @@ const {
   jobsLoading,
   refreshing,
   submitting,
+  deletingJobIds,
   error,
   lastUpdatedAt,
   loadJobs,
   refreshJobs,
   submitJob,
+  deleteJob,
   clearError,
   stopPolling,
 } = useAiGeneratedImages()
@@ -254,6 +304,9 @@ const trackUrl = ref<string | null>('')
 const promptTouched = ref(false)
 const trackUrlTouched = ref(false)
 const showSuccess = ref(false)
+const showDeleteSuccess = ref(false)
+const deleteDialogOpen = ref(false)
+const deleteCandidate = ref<AiGeneratedImageJob | null>(null)
 const search = ref('')
 const statusFilter = ref<'all' | TrackVideoJobStatus>('all')
 
@@ -333,6 +386,11 @@ const rawPromptError = computed(() => {
 const rawTrackUrlError = computed(() => validateTrackUrl(trackUrl.value?.trim() || ''))
 const promptError = computed(() => promptTouched.value ? rawPromptError.value : null)
 const trackUrlError = computed(() => trackUrlTouched.value ? rawTrackUrlError.value : null)
+const deletingCandidate = computed(() => (
+  deleteCandidate.value
+    ? deletingJobIds.value.has(deleteCandidate.value.jobId)
+    : false
+))
 const completedJobs = computed(() => jobs.value.filter(job => job.status === 'completed'))
 const hasFilters = computed(() => (
   search.value.trim().length > 0 || statusFilter.value !== 'all'
@@ -383,6 +441,34 @@ async function handleSubmit(): Promise<void> {
 function clearFilters(): void {
   search.value = ''
   statusFilter.value = 'all'
+}
+
+function requestDelete(job: AiGeneratedImageJob): void {
+  clearError()
+  deleteCandidate.value = job
+  deleteDialogOpen.value = true
+}
+
+function closeDeleteDialog(): void {
+  if (deletingCandidate.value) {
+    return
+  }
+
+  deleteDialogOpen.value = false
+  deleteCandidate.value = null
+}
+
+async function confirmDelete(): Promise<void> {
+  if (!deleteCandidate.value) {
+    return
+  }
+
+  const deleted = await deleteJob(deleteCandidate.value.jobId)
+  if (deleted) {
+    deleteDialogOpen.value = false
+    deleteCandidate.value = null
+    showDeleteSuccess.value = true
+  }
 }
 
 onMounted(() => {
@@ -665,6 +751,59 @@ onBeforeUnmount(stopPolling)
 .image-skeleton {
   overflow: hidden;
   border-radius: 18px;
+}
+
+.delete-dialog {
+  padding: 28px;
+  text-align: center;
+  background: rgb(var(--v-theme-surface));
+}
+
+.delete-dialog__icon {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto;
+  color: rgb(var(--v-theme-error));
+  background: rgba(var(--v-theme-error), 0.11);
+  border-radius: 18px;
+}
+
+.delete-dialog h2 {
+  margin: 18px 0 0;
+  font-size: 1.5rem;
+  letter-spacing: -0.04em;
+}
+
+.delete-dialog > p {
+  margin: 9px auto 0;
+  color: rgba(var(--v-theme-on-surface), 0.54);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.delete-dialog blockquote {
+  display: -webkit-box;
+  margin: 18px 0 0;
+  padding: 13px 15px;
+  overflow: hidden;
+  color: rgba(var(--v-theme-on-surface), 0.7);
+  font-size: 0.73rem;
+  font-style: normal;
+  line-height: 1.5;
+  text-align: left;
+  background: rgba(var(--v-theme-on-surface), 0.04);
+  border-radius: 12px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.delete-dialog__actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 24px;
 }
 
 .empty-state {

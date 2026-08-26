@@ -8,8 +8,8 @@
     aria-haspopup="dialog"
     :aria-label="`Open generated image details for ${title}`"
     @click="detailsOpen = true"
-    @keydown.enter="detailsOpen = true"
-    @keydown.space.prevent="detailsOpen = true"
+    @keydown.enter.self="detailsOpen = true"
+    @keydown.space.self.prevent="detailsOpen = true"
   >
     <div class="image-card__media">
       <v-img
@@ -37,7 +37,18 @@
         <span>{{ placeholderText }}</span>
       </div>
       <div class="image-card__shade"></div>
-      <StatusChip :status="props.job.status" class="image-card__status" />
+      <div class="image-card__controls">
+        <StatusChip :status="props.job.status" />
+        <v-btn
+          icon="mdi-delete-outline"
+          variant="flat"
+          size="x-small"
+          color="error"
+          aria-label="Delete generated image"
+          :loading="props.deleting"
+          @click.stop="requestDelete"
+        />
+      </div>
     </div>
 
     <div class="image-card__body">
@@ -143,6 +154,15 @@
 
           <div class="details-actions">
             <v-btn
+              color="error"
+              variant="tonal"
+              prepend-icon="mdi-delete-outline"
+              :loading="props.deleting"
+              @click.stop="requestDelete"
+            >
+              Delete
+            </v-btn>
+            <v-btn
               v-if="props.job.trackUrl"
               :href="props.job.trackUrl"
               target="_blank"
@@ -177,8 +197,15 @@ import StatusChip from '@/components/StatusChip.vue'
 import type { AiGeneratedImageJob } from '@/types/aiImageGeneration'
 import { formatDuration, formatRelativeDate } from '@/utils/formatters'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   job: AiGeneratedImageJob
+  deleting?: boolean
+}>(), {
+  deleting: false,
+})
+
+const emit = defineEmits<{
+  delete: [job: AiGeneratedImageJob]
 }>()
 
 const detailsOpen = ref(false)
@@ -206,6 +233,11 @@ const placeholderText = computed(() => {
   }
   return 'Image unavailable'
 })
+
+function requestDelete(): void {
+  detailsOpen.value = false
+  emit('delete', props.job)
+}
 
 watch(() => props.job.imageUrl, () => {
   imageFailed.value = false
@@ -277,10 +309,15 @@ watch(() => props.job.imageUrl, () => {
   background: linear-gradient(to bottom, rgba(5, 6, 8, 0.2), transparent 24%, rgba(5, 6, 8, 0.35));
 }
 
-.image-card__status {
+.image-card__controls {
   position: absolute;
   top: 10px;
+  right: 10px;
   left: 10px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .image-card__body {

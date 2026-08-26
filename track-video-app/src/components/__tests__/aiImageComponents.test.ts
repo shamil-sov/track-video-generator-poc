@@ -3,9 +3,11 @@
 import { defineComponent } from 'vue'
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import AiGeneratedImageCard from '@/components/AiGeneratedImageCard.vue'
 import AiImageJobCard from '@/components/AiImageJobCard.vue'
 import AiVideoTemplatePicker from '@/components/AiVideoTemplatePicker.vue'
 import AiVisualStylePicker from '@/components/AiVisualStylePicker.vue'
+import type { AiGeneratedImageJob } from '@/types/aiImageGeneration'
 import type { AiImageVideoJob } from '@/types/aiImageTrackVideo'
 
 const imageStub = defineComponent({
@@ -211,5 +213,52 @@ describe('AiImageJobCard', () => {
 
     await wrapper.find('video').trigger('error')
     expect(wrapper.text()).toContain('The video preview could not be loaded')
+  })
+})
+
+describe('AiGeneratedImageCard', () => {
+  it('requests confirmation instead of deleting directly', async () => {
+    const generatedImage: AiGeneratedImageJob = {
+      jobId: 'image-job',
+      promptTemplate: 'A glass sculpture',
+      resolvedPrompt: 'A glass sculpture',
+      trackUrl: null,
+      postId: null,
+      revisionId: null,
+      track: null,
+      status: 'completed',
+      triggeredAt: '2026-08-26T10:00:00Z',
+      processingStartedAt: '2026-08-26T10:00:01Z',
+      finishedAt: '2026-08-26T10:00:19Z',
+      updatedAt: '2026-08-26T10:00:19Z',
+      queueDurationMs: 1000,
+      processingDurationMs: 18000,
+      totalDurationMs: 19000,
+      imageUrl: 'https://cdn.example/image.png',
+      error: null,
+    }
+
+    const wrapper = mount(AiGeneratedImageCard, {
+      props: {
+        job: generatedImage,
+      },
+      global: {
+        stubs: {
+          VCard: cardStub,
+          VDialog: dialogStub,
+          VImg: imageStub,
+          VBtn: buttonStub,
+          VIcon: passthroughStub,
+          VChip: passthroughStub,
+          VAlert: passthroughStub,
+          VProgressCircular: passthroughStub,
+          StatusChip: passthroughStub,
+        },
+      },
+    })
+
+    await wrapper.find('[aria-label="Delete generated image"]').trigger('click')
+
+    expect(wrapper.emitted('delete')?.at(-1)).toEqual([generatedImage])
   })
 })

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createAiGeneratedImageJob,
+  deleteAiGeneratedImageJob,
   getAiGeneratedImageJobs,
   getAiImageVisualStyles,
 } from '@/services/api'
@@ -96,5 +97,15 @@ describe('API client', () => {
     await getAiGeneratedImageJobs()
 
     expect(String(fetchMock.mock.calls[0][0])).toContain('ai-image-jobs?limit=50')
+  })
+
+  it('deletes a generated image job without expecting a response body', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await deleteAiGeneratedImageJob('image-job')
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/ai-image-jobs/image-job')
+    expect(fetchMock.mock.calls[0][1]).toEqual({ method: 'DELETE' })
   })
 })

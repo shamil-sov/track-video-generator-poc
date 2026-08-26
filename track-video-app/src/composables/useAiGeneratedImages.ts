@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import {
   createAiGeneratedImageJob,
+  deleteAiGeneratedImageJob,
   getAiGeneratedImageJob,
   getAiGeneratedImageJobs,
 } from '@/services/api'
@@ -13,8 +14,10 @@ const jobs = ref<AiGeneratedImageJob[]>([])
 const jobsLoading = ref(false)
 const refreshing = ref(false)
 const submitting = ref(false)
+const deletingJobIds = ref(new Set<string>())
 const jobsError = ref<string | null>(null)
 const submissionError = ref<string | null>(null)
+const deletionError = ref<string | null>(null)
 const lastUpdatedAt = ref<Date | null>(null)
 const pendingJobIds = new Set<string>()
 
@@ -174,6 +177,29 @@ async function submitJob(prompt: string, trackUrl?: string): Promise<boolean> {
   }
 }
 
+async function deleteJob(jobId: string): Promise<boolean> {
+  if (deletingJobIds.value.has(jobId)) {
+    return false
+  }
+
+  deletingJobIds.value = new Set([...deletingJobIds.value, jobId])
+  deletionError.value = null
+
+  try {
+    await deleteAiGeneratedImageJob(jobId)
+    pendingJobIds.delete(jobId)
+    jobs.value = jobs.value.filter(job => job.jobId !== jobId)
+    return true
+  } catch (errorValue) {
+    deletionError.value = errorMessage(errorValue, 'Could not delete the image job.')
+    return false
+  } finally {
+    const remainingIds = new Set(deletingJobIds.value)
+    remainingIds.delete(jobId)
+    deletingJobIds.value = remainingIds
+  }
+}
+
 function stopPolling(): void {
   pollingEnabled = false
   latestRequestId += 1
@@ -195,6 +221,7 @@ function refreshJobs(): Promise<void> {
 function clearError(): void {
   jobsError.value = null
   submissionError.value = null
+  deletionError.value = null
 }
 
 export function useAiGeneratedImages() {
@@ -204,11 +231,15 @@ export function useAiGeneratedImages() {
     jobsLoading,
     refreshing,
     submitting,
-    error: computed(() => submissionError.value || jobsError.value),
+    deletingJobIds,
+    error: computed(() => (
+      submissionError.value || deletionError.value || jobsError.value
+    )),
     lastUpdatedAt,
     loadJobs,
     refreshJobs,
     submitJob,
+    deleteJob,
     clearError,
     stopPolling,
   }
