@@ -7,7 +7,7 @@
         <div class="generator-header">
           <div>
             <div class="section-kicker">New generation</div>
-            <h2>Pick a track and a look</h2>
+            <h2>Generate a video</h2>
           </div>
           <v-chip size="small" variant="tonal" prepend-icon="mdi-clock-fast">
             15 seconds from the start

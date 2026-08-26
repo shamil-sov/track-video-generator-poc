@@ -5,7 +5,7 @@
         <div class="generator-header">
           <div>
             <div class="section-kicker">New AI-image generation</div>
-            <h2>Start with a track</h2>
+            <h2>Generate a video</h2>
           </div>
           <v-chip size="small" variant="tonal" prepend-icon="mdi-clock-fast">
             15 seconds from the start
