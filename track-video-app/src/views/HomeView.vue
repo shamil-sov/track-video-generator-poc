@@ -1,37 +1,5 @@
 <template>
   <main>
-    <section class="hero">
-      <v-container class="page-container">
-        <div class="hero-content">
-          <div>
-            <div class="eyebrow">
-              <span class="live-dot"></span>
-              UAT experiment
-            </div>
-            <h1>Turn a track into motion.</h1>
-            <p>
-              Choose a visual style, generate a 15-second portrait video, and follow every render from queue to MP4.
-            </p>
-          </div>
-
-          <div class="hero-stats">
-            <div>
-              <strong>{{ jobs.length }}</strong>
-              <span>Total jobs</span>
-            </div>
-            <div>
-              <strong>{{ completedCount }}</strong>
-              <span>Ready videos</span>
-            </div>
-            <div>
-              <strong>{{ activeJobCount }}</strong>
-              <span>In progress</span>
-            </div>
-          </div>
-        </div>
-      </v-container>
-    </section>
-
     <v-container class="page-container content-container">
       <v-card class="generator-card" rounded="xl" elevation="0">
         <div class="generator-header">
@@ -243,7 +211,6 @@ import { formatRelativeDate } from '@/utils/formatters'
 
 const {
   jobs,
-  activeJobCount,
   loading,
   refreshing,
   submitting,
@@ -351,7 +318,6 @@ const textOverlayError = computed(() => {
 
   return null
 })
-const completedCount = computed(() => jobs.value.filter(job => job.status === 'completed').length)
 const hasFilters = computed(() => (
   search.value.trim().length > 0
   || statusFilter.value !== 'all'
@@ -412,110 +378,8 @@ onBeforeUnmount(stopPolling)
 </script>
 
 <style scoped>
-.hero {
-  position: relative;
-  overflow: hidden;
-  padding: 68px 0 82px;
-  background:
-    radial-gradient(circle at 12% 24%, rgba(215, 255, 79, 0.12), transparent 27%),
-    radial-gradient(circle at 88% 10%, rgba(127, 140, 255, 0.2), transparent 29%),
-    linear-gradient(145deg, #101116, #08090c 68%);
-}
-
-.hero::after {
-  position: absolute;
-  right: -8%;
-  bottom: -230px;
-  width: 610px;
-  height: 420px;
-  content: '';
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 50%;
-  box-shadow:
-    0 0 0 42px rgba(255, 255, 255, 0.025),
-    0 0 0 84px rgba(255, 255, 255, 0.018);
-  transform: rotate(-12deg);
-}
-
-.hero-content {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 64px;
-  align-items: end;
-}
-
-.eyebrow,
-.section-kicker {
-  color: #d7ff4f;
-  font-size: 0.7rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.13em;
-}
-
-.eyebrow {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.live-dot {
-  width: 7px;
-  height: 7px;
-  background: #d7ff4f;
-  border-radius: 50%;
-  box-shadow: 0 0 0 5px rgba(215, 255, 79, 0.12);
-}
-
-.hero h1 {
-  max-width: 700px;
-  margin: 0;
-  color: #f7f8f4;
-  font-size: clamp(3rem, 7vw, 6.5rem);
-  font-weight: 820;
-  line-height: 0.92;
-  letter-spacing: -0.068em;
-}
-
-.hero p {
-  max-width: 620px;
-  margin: 28px 0 0;
-  color: rgba(247, 248, 244, 0.62);
-  font-size: clamp(1rem, 1.6vw, 1.18rem);
-  line-height: 1.65;
-}
-
-.hero-stats {
-  display: grid;
-  gap: 22px;
-  min-width: 150px;
-  padding-left: 28px;
-  border-left: 1px solid rgba(255, 255, 255, 0.13);
-}
-
-.hero-stats div {
-  display: flex;
-  flex-direction: column;
-}
-
-.hero-stats strong {
-  color: #f7f8f4;
-  font-size: 1.8rem;
-  line-height: 1;
-  letter-spacing: -0.05em;
-}
-
-.hero-stats span {
-  margin-top: 5px;
-  color: rgba(247, 248, 244, 0.45);
-  font-size: 0.72rem;
-}
-
 .content-container {
-  margin-top: -42px;
+  padding-top: 38px;
   padding-bottom: 80px;
 }
 
@@ -542,6 +406,10 @@ onBeforeUnmount(stopPolling)
 .section-kicker {
   margin-bottom: 5px;
   color: rgb(var(--v-theme-primary));
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
 }
 
 .generator-header h2,
@@ -720,19 +588,6 @@ onBeforeUnmount(stopPolling)
 }
 
 @media (max-width: 900px) {
-  .hero-content {
-    grid-template-columns: 1fr;
-    gap: 38px;
-  }
-
-  .hero-stats {
-    grid-template-columns: repeat(3, 1fr);
-    padding-top: 20px;
-    padding-left: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.13);
-    border-left: 0;
-  }
-
   .filters {
     grid-template-columns: 1fr 1fr;
   }
@@ -751,18 +606,6 @@ onBeforeUnmount(stopPolling)
 }
 
 @media (max-width: 620px) {
-  .hero {
-    padding: 52px 0 72px;
-  }
-
-  .hero h1 {
-    font-size: 3.3rem;
-  }
-
-  .hero-stats {
-    gap: 12px;
-  }
-
   .generator-card {
     padding: 20px;
   }
