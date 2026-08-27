@@ -48,16 +48,9 @@
         <form @submit.prevent="handleSubmit">
           <div class="generator-grid">
             <div class="prompt-column">
-              <v-textarea
+              <StylePromptInput
                 v-model="prompt"
-                label="Describe the visual style or scene"
-                placeholder="A translucent glass sculpture floating above a midnight ocean..."
-                variant="outlined"
-                color="primary"
-                rows="6"
-                auto-grow
-                counter="2000"
-                :error-messages="promptError"
+                :error-message="promptError"
                 :disabled="submitting"
                 @blur="promptTouched = true"
               />
@@ -277,6 +270,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import AiGeneratedImageCard from '@/components/AiGeneratedImageCard.vue'
+import StylePromptInput from '@/components/StylePromptInput.vue'
 import { useAiGeneratedImages } from '@/composables/useAiGeneratedImages'
 import type { AiGeneratedImageJob } from '@/types/aiImageGeneration'
 import type { TrackVideoJobStatus } from '@/types/trackVideo'
