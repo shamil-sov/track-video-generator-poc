@@ -1,6 +1,8 @@
 <template>
   <main class="ai-page">
     <v-container class="page-container content-container">
+      <AiVideoSectionNav />
+
       <v-card class="generator-card" rounded="xl" elevation="0">
         <div class="generator-header">
           <div>
@@ -203,59 +205,6 @@
           </v-btn>
         </div>
       </section>
-
-      <section class="performance-section">
-        <div class="performance-header">
-          <div>
-            <div class="section-kicker">AI-image performance</div>
-            <h2>How fast is this workflow?</h2>
-            <p>Calculated only from the latest AI-image video jobs.</p>
-          </div>
-        </div>
-
-        <div class="metric-grid">
-          <v-card class="metric-card metric-card--primary" rounded="xl" elevation="0">
-            <span>Average end to end</span>
-            <strong>{{ formatDuration(totalTimings.average) }}</strong>
-            <small>triggered → finished</small>
-          </v-card>
-          <v-card class="metric-card" rounded="xl" elevation="0">
-            <span>P95</span>
-            <strong>{{ formatDuration(totalTimings.p95) }}</strong>
-            <small>95% finish within this time</small>
-          </v-card>
-        </div>
-
-        <v-card class="performance-table" rounded="xl" elevation="0">
-          <div class="performance-table__header">
-            <div>
-              <span>Template comparison</span>
-              <h3>Performance by motion template</h3>
-            </div>
-            <span>{{ jobs.length }} AI videos</span>
-          </div>
-          <div class="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>Template</th>
-                  <th>Videos</th>
-                  <th>Average</th>
-                  <th>P95</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="summary in templateSummaries" :key="summary.id">
-                  <td>{{ summary.name }}</td>
-                  <td>{{ summary.videos }}</td>
-                  <td>{{ formatDuration(summary.average) }}</td>
-                  <td>{{ formatDuration(summary.p95) }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </v-card>
-      </section>
     </v-container>
 
     <v-snackbar v-model="showSuccess" color="success" :timeout="4500">
@@ -267,13 +216,13 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import AiVideoSectionNav from '@/components/AiVideoSectionNav.vue'
 import AiImageJobCard from '@/components/AiImageJobCard.vue'
 import AiVideoTemplatePicker from '@/components/AiVideoTemplatePicker.vue'
 import AiVisualStylePicker from '@/components/AiVisualStylePicker.vue'
 import { useAiImageVideoJobs } from '@/composables/useAiImageVideoJobs'
 import type { TrackVideoJobStatus } from '@/types/trackVideo'
-import { formatDuration, formatRelativeDate } from '@/utils/formatters'
-import { summarizeTimings } from '@/utils/insights'
+import { formatRelativeDate } from '@/utils/formatters'
 
 const {
   jobs,
@@ -371,10 +320,6 @@ function validateTrackUrl(value: string): string | null {
 
 const rawTrackUrlError = computed(() => validateTrackUrl(trackUrl.value))
 const trackUrlError = computed(() => urlTouched.value ? rawTrackUrlError.value : null)
-const completedJobs = computed(() => jobs.value.filter(job => job.status === 'completed'))
-const totalTimings = computed(() => summarizeTimings(
-  completedJobs.value.map(job => job.totalDurationMs),
-))
 const hasFilters = computed(() => (
   search.value.trim().length > 0
   || statusFilter.value !== 'all'
@@ -409,20 +354,6 @@ const filteredJobs = computed(() => {
     ].some(value => value?.toLowerCase().includes(query))
   })
 })
-
-const templateSummaries = computed(() => templateIds.value.map(id => {
-  const matching = jobs.value.filter(job => job.template === id)
-  const completed = matching.filter(job => job.status === 'completed')
-  const timings = summarizeTimings(completed.map(job => job.totalDurationMs))
-
-  return {
-    id,
-    name: templateName(id),
-    videos: matching.length,
-    average: timings.average,
-    p95: timings.p95,
-  }
-}))
 
 function templateName(id: string): string {
   return videoTemplates.value.find(template => template.id === id)?.name || id
@@ -503,8 +434,7 @@ onBeforeUnmount(stopPolling)
 }
 
 .generator-header,
-.library-header,
-.performance-header {
+.library-header {
   display: flex;
   gap: 20px;
   align-items: center;
@@ -513,16 +443,14 @@ onBeforeUnmount(stopPolling)
 }
 
 .generator-header h2,
-.library-header h2,
-.performance-header h2 {
+.library-header h2 {
   margin: 0;
   font-size: clamp(1.6rem, 3vw, 2.25rem);
   line-height: 1.1;
   letter-spacing: -0.045em;
 }
 
-.library-header p,
-.performance-header p {
+.library-header p {
   margin: 7px 0 0;
   color: rgba(var(--v-theme-on-surface), 0.48);
   font-size: 0.78rem;
@@ -598,8 +526,7 @@ onBeforeUnmount(stopPolling)
   font-size: 0.76rem;
 }
 
-.library-section,
-.performance-section {
+.library-section {
   margin-top: 62px;
 }
 
@@ -677,107 +604,6 @@ onBeforeUnmount(stopPolling)
   font-size: 0.87rem;
 }
 
-.metric-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.metric-card,
-.performance-table {
-  background: rgba(var(--v-theme-surface), 0.78);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.09);
-}
-
-.metric-card {
-  display: flex;
-  min-height: 150px;
-  padding: 22px;
-  flex-direction: column;
-}
-
-.metric-card--primary {
-  color: #f7f8f4;
-  background:
-    radial-gradient(circle at 100% 0, rgba(255, 92, 74, 0.24), transparent 44%),
-    #16181d;
-  border-color: rgba(255, 118, 103, 0.22);
-}
-
-.metric-card span,
-.metric-card small {
-  color: rgba(var(--v-theme-on-surface), 0.5);
-  font-size: 0.72rem;
-}
-
-.metric-card strong {
-  margin-top: auto;
-  font-size: clamp(1.75rem, 3vw, 2.6rem);
-  line-height: 1;
-}
-
-.metric-card small {
-  margin-top: 8px;
-}
-
-.performance-table {
-  padding: 24px;
-  margin-top: 14px;
-}
-
-.performance-table__header {
-  display: flex;
-  gap: 18px;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 22px;
-}
-
-.performance-table__header > span,
-.performance-table__header > div > span {
-  color: rgba(var(--v-theme-on-surface), 0.48);
-  font-size: 0.7rem;
-}
-
-.performance-table__header > div > span {
-  color: #ff7667;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.performance-table h3 {
-  margin: 3px 0 0;
-  font-size: 1.3rem;
-}
-
-.table-scroll {
-  overflow-x: auto;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 12px 10px;
-  text-align: left;
-  border-bottom: 1px solid rgba(var(--v-theme-on-surface), 0.07);
-}
-
-th {
-  color: rgba(var(--v-theme-on-surface), 0.45);
-  font-size: 0.66rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-}
-
-td {
-  font-size: 0.78rem;
-}
-
 @media (max-width: 1000px) {
   .filters {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -798,8 +624,7 @@ td {
   }
 
   .generator-header,
-  .library-header,
-  .performance-header {
+  .library-header {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -814,8 +639,7 @@ td {
   }
 
   .filters,
-  .jobs-grid,
-  .metric-grid {
+  .jobs-grid {
     grid-template-columns: 1fr;
   }
 

@@ -102,7 +102,8 @@ describe('AI-image video template previews', () => {
     const wrapper = mountPicker()
     await flushPromises()
     const firstVideo = wrapper.get('.selected-template__video').element as HTMLVideoElement
-    expect(firstVideo.muted).toBe(false)
+    expect(firstVideo.muted).toBe(true)
+    expect(wrapper.get('.sound-toggle').text()).toContain('Sound off')
     expect(firstVideo.controls).toBe(true)
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled()
 
@@ -115,36 +116,39 @@ describe('AI-image video template previews', () => {
       expect(video.autoplay).toBe(false)
       expect(video.controls).toBe(false)
       expect(video.paused).toBe(true)
+      expect(video.muted).toBe(true)
     }
     expect(vi.mocked(HTMLMediaElement.prototype.play).mock.contexts.every(video => (
       video === firstVideo
     ))).toBe(true)
 
     await wrapper.get('.sound-toggle').trigger('click')
-    expect(firstVideo.muted).toBe(true)
-    expect(wrapper.get('.sound-toggle').attributes('aria-pressed')).toBe('true')
+    expect(firstVideo.muted).toBe(false)
+    expect(wrapper.get('.sound-toggle').attributes('aria-pressed')).toBe('false')
 
     await wrapper.get('[aria-label="Show next preview"]').trigger('click')
     await flushPromises()
     expect(vi.mocked(HTMLMediaElement.prototype.pause).mock.contexts).toContain(firstVideo)
     const nextVideo = wrapper.get('.selected-template__video').element as HTMLVideoElement
-    expect(nextVideo.muted).toBe(true)
+    expect(nextVideo.muted).toBe(false)
     expect(vi.mocked(HTMLMediaElement.prototype.play).mock.contexts.at(-1)).toBe(nextVideo)
 
-    nextVideo.muted = false
+    nextVideo.muted = true
     await wrapper.get('.selected-template__video').trigger('volumechange')
-    expect(wrapper.get('.sound-toggle').text()).toContain('Sound on')
-    expect(wrapper.get('.sound-toggle').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('.sound-toggle').text()).toContain('Sound off')
+    expect(wrapper.get('.sound-toggle').attributes('aria-pressed')).toBe('true')
 
     wrapper.unmount()
     expect(vi.mocked(HTMLMediaElement.prototype.pause).mock.contexts).toContain(nextVideo)
   })
 
-  it('leaves playback controls available when the browser blocks audible autoplay', async () => {
+  it('leaves playback controls available when the browser blocks playback after enabling sound', async () => {
     vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValue(
       new DOMException('User interaction is required', 'NotAllowedError'),
     )
     const wrapper = mountPicker()
+    await flushPromises()
+    await wrapper.get('.sound-toggle').trigger('click')
     await flushPromises()
 
     const video = wrapper.get('.selected-template__video').element as HTMLVideoElement

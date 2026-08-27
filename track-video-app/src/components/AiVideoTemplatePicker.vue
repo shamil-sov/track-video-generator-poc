@@ -24,6 +24,7 @@
           :src="template.exampleVideoUrls[0]"
           :aria-label="`${template.name} video example`"
           class="template-preview"
+          muted
           playsinline
           preload="metadata"
           @error="failedPreviews.add(template.exampleVideoUrls[0])"

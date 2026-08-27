@@ -27,7 +27,7 @@
           </v-btn>
           <v-btn
             :to="{ name: 'ai-image-videos' }"
-            :variant="route.name === 'ai-image-videos' ? 'tonal' : 'text'"
+            :variant="route.name === 'ai-image-videos' || route.name === 'ai-image-insights' ? 'tonal' : 'text'"
             rounded="lg"
             prepend-icon="mdi-image-sparkles-outline"
             aria-label="AI-image videos"

@@ -3,7 +3,7 @@
     <div class="selected-template__copy">
       <span>Selected video template</span>
       <strong>{{ props.template.name }}</strong>
-      <p>{{ props.template.description || 'Choose a track example, then play it with sound.' }}</p>
+      <p>{{ props.template.description || 'Browse the previews and turn on sound to listen.' }}</p>
       <button
         v-if="selectedPreviewUrl"
         type="button"
@@ -37,7 +37,7 @@
         aria-label="Select previous preview"
         @click="showPreviousPreview"
       >
-        <video :src="previousPreviewUrl" preload="metadata" playsinline></video>
+        <video :src="previousPreviewUrl" preload="metadata" muted playsinline></video>
       </button>
 
       <div class="selected-template__media">
@@ -70,7 +70,7 @@
         aria-label="Select next preview"
         @click="showNextPreview"
       >
-        <video :src="nextPreviewUrl" preload="metadata" playsinline></video>
+        <video :src="nextPreviewUrl" preload="metadata" muted playsinline></video>
       </button>
 
       <button
@@ -107,7 +107,7 @@ const nextPreviewUrl = computed(() => {
   return previews[(selectedPreviewIndex.value + 1) % previews.length]
 })
 const selectedVideo = ref<HTMLVideoElement | null>(null)
-const previewMuted = ref(false)
+const previewMuted = ref(true)
 const failedPreviews = reactive(new Set<string>())
 
 async function playSelectedPreview(): Promise<void> {
