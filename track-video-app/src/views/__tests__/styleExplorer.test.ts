@@ -78,6 +78,7 @@ describe('Style Explorer prompt guidance', () => {
   it('offers exactly two directions and highlights both placeholders in each', async () => {
     const wrapper = mountExplorer()
     const directions = wrapper.findAll('.prompt-ideas button')
+    expect(wrapper.get('.prompt-ideas > span').text()).toBe('Examples')
     expect(directions.map(button => button.text())).toEqual(['Woodblock print', 'Dreamlike editorial'])
 
     for (const direction of directions) {
@@ -90,6 +91,12 @@ describe('Style Explorer prompt guidance', () => {
       )
     }
     expect(state.submitJob).not.toHaveBeenCalled()
+  })
+
+  it('uses a simple page title without the introductory description', () => {
+    const wrapper = mountExplorer()
+    expect(wrapper.get('.hero h1').text()).toBe('Explore styles')
+    expect(wrapper.find('.hero p').exists()).toBe(false)
   })
 
   it('puts the track URL and accessible placeholder guide above the prompt', () => {

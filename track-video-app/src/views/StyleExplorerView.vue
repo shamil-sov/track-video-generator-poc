@@ -8,10 +8,7 @@
               <span class="live-dot"></span>
               Open visual playground
             </div>
-            <h1>Explore a new visual language.</h1>
-            <p>
-              Describe an image, generate a portrait artwork, and browse the latest experiments from everyone using the lab.
-            </p>
+            <h1>Explore styles</h1>
           </div>
 
           <div class="hero-stats">
@@ -98,7 +95,7 @@
               />
 
               <div class="prompt-ideas">
-                <span>Try a direction</span>
+                <span>Examples</span>
                 <div>
                   <v-chip
                     v-for="idea in promptIdeas"
@@ -559,14 +556,6 @@ onBeforeUnmount(stopPolling)
   font-weight: 820;
   line-height: 0.92;
   letter-spacing: -0.068em;
-}
-
-.hero p {
-  max-width: 680px;
-  margin: 28px 0 0;
-  color: rgba(247, 248, 244, 0.62);
-  font-size: clamp(1rem, 1.6vw, 1.18rem);
-  line-height: 1.65;
 }
 
 .hero-stats {
