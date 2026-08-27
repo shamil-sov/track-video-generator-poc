@@ -41,6 +41,7 @@ enableAutoUnmount(afterEach)
 
 describe('AI-image video template previews', () => {
   beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999)
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
     vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined)
   })

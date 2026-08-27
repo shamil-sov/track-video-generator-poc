@@ -1,15 +1,25 @@
 // @vitest-environment happy-dom
 
 import { defineComponent } from 'vue'
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { enableAutoUnmount, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TemplatePicker from '@/components/TemplatePicker.vue'
 
 const passthroughStub = defineComponent({
   template: '<span><slot /></span>',
 })
 
+enableAutoUnmount(afterEach)
+
 describe('TemplatePicker', () => {
+  beforeEach(() => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.999)
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue()
+    vi.spyOn(HTMLMediaElement.prototype, 'pause').mockImplementation(() => undefined)
+  })
+
+  afterEach(() => vi.restoreAllMocks())
+
   it('keeps all eight template options available in catalogue order', async () => {
     const templates = Array.from({ length: 8 }, (_, index) => ({
       id: `template-${index + 1}`,

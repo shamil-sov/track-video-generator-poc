@@ -20,6 +20,7 @@ import type {
   AiGeneratedImageJobsPage,
   CreateAiGeneratedImageJobResult,
 } from '@/types/aiImageGeneration'
+import { shuffled } from '@/utils/shuffle'
 
 export const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL
@@ -35,18 +36,6 @@ const AI_IMAGE_EXCLUDED_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-excluded-visu
 const AI_IMAGE_TEMPLATES_URL = `${AI_IMAGE_API_URL}/ai-image-video-templates`
 const AI_IMAGE_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-video-jobs`
 const AI_IMAGE_GENERATION_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-jobs`
-
-function shuffled<T>(values: readonly T[]): T[] {
-  const result = [...values]
-  for (let index = result.length - 1; index > 0; index -= 1) {
-    const replacementIndex = Math.floor(Math.random() * (index + 1))
-    const currentValue = result[index]
-    result[index] = result[replacementIndex]
-    result[replacementIndex] = currentValue
-  }
-
-  return result
-}
 
 async function parseResponse<T>(response: Response): Promise<T> {
   if (response.ok) {

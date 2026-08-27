@@ -1,6 +1,6 @@
 <template>
   <div class="template-picker">
-    <TemplatePreviewGallery :template="selectedTemplate" />
+    <TemplatePreviewGallery :template="selectedTemplate" :selection-revision="selectionRevision" />
 
     <div class="template-options-heading">
       <strong>Choose a video template</strong>
@@ -19,7 +19,7 @@
         ]"
         role="radio"
         :aria-checked="model === template.id"
-        @click="model = template.id"
+        @click="selectTemplate(template.id)"
       >
         <video
           v-if="template.exampleVideoUrls[0]"
@@ -48,7 +48,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import TemplatePreviewGallery from '@/components/TemplatePreviewGallery.vue'
 import type { TrackVideoTemplate, VideoTemplateCatalogueItem } from '@/types/trackVideo'
 
@@ -56,9 +56,18 @@ const props = defineProps<{
   templates: VideoTemplateCatalogueItem[]
 }>()
 const model = defineModel<TrackVideoTemplate>({ required: true })
+const selectionRevision = ref(0)
 const selectedTemplate = computed(() => (
   props.templates.find(template => template.id === model.value) || props.templates[0]
 ))
+
+function selectTemplate(id: TrackVideoTemplate): void {
+  if (model.value === id) {
+    selectionRevision.value += 1
+  } else {
+    model.value = id
+  }
+}
 </script>
 
 <style scoped>

@@ -1,6 +1,10 @@
 <template>
   <div class="template-picker">
-    <TemplatePreviewGallery v-if="selectedTemplate" :template="selectedTemplate" />
+    <TemplatePreviewGallery
+      v-if="selectedTemplate"
+      :template="selectedTemplate"
+      :selection-revision="selectionRevision"
+    />
 
     <div class="template-grid" role="radiogroup" aria-label="AI-image video template">
       <button
@@ -13,7 +17,7 @@
         :aria-checked="model === template.id"
         :tabindex="model === template.id ? 0 : -1"
         :ref="element => setButtonElement(template.id, element)"
-        @click="model = template.id"
+        @click="selectTemplate(template.id)"
         @keydown.left.prevent="selectAdjacentTemplate(template.id, -1)"
         @keydown.up.prevent="selectAdjacentTemplate(template.id, -1)"
         @keydown.right.prevent="selectAdjacentTemplate(template.id, 1)"
@@ -51,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, reactive, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import TemplatePreviewGallery from '@/components/TemplatePreviewGallery.vue'
 import type { AiImageVideoTemplate } from '@/types/aiImageTrackVideo'
@@ -61,6 +65,7 @@ const props = defineProps<{
 }>()
 
 const model = defineModel<string | null>({ required: true })
+const selectionRevision = ref(0)
 const previewTemplates = computed(() => props.templates.map(template => ({
   ...template,
   // Older catalogue responses contain only the canonical preview.
@@ -91,6 +96,14 @@ function setButtonElement(
   }
 }
 
+function selectTemplate(id: string): void {
+  if (model.value === id) {
+    selectionRevision.value += 1
+  } else {
+    model.value = id
+  }
+}
+
 function selectAdjacentTemplate(id: string, offset: number): void {
   const ids = [...buttonElements.keys()]
   const currentIndex = ids.indexOf(id)
@@ -99,7 +112,7 @@ function selectAdjacentTemplate(id: string, offset: number): void {
     return
   }
 
-  model.value = nextId
+  selectTemplate(nextId)
   void nextTick(() => buttonElements.get(nextId)?.focus())
 }
 </script>

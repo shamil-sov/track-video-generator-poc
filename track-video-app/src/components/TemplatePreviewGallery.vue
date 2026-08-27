@@ -18,10 +18,10 @@
 
     <div
       class="preview-carousel"
-      :class="{ 'preview-carousel--single': props.template.exampleVideoUrls.length <= 1 }"
+      :class="{ 'preview-carousel--single': previewUrls.length <= 1 }"
     >
       <button
-        v-if="props.template.exampleVideoUrls.length > 1"
+        v-if="previewUrls.length > 1"
         type="button"
         class="carousel-arrow"
         aria-label="Show previous preview"
@@ -31,7 +31,7 @@
       </button>
 
       <button
-        v-if="props.template.exampleVideoUrls.length > 1"
+        v-if="previewUrls.length > 1"
         type="button"
         class="carousel-peek carousel-peek--previous"
         aria-label="Select previous preview"
@@ -64,7 +64,7 @@
       </div>
 
       <button
-        v-if="props.template.exampleVideoUrls.length > 1"
+        v-if="previewUrls.length > 1"
         type="button"
         class="carousel-peek carousel-peek--next"
         aria-label="Select next preview"
@@ -74,7 +74,7 @@
       </button>
 
       <button
-        v-if="props.template.exampleVideoUrls.length > 1"
+        v-if="previewUrls.length > 1"
         type="button"
         class="carousel-arrow"
         aria-label="Show next preview"
@@ -89,26 +89,49 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import type { VideoTemplateCatalogueItem } from '@/types/trackVideo'
+import { shuffled } from '@/utils/shuffle'
 
 const props = defineProps<{
   template: VideoTemplateCatalogueItem & { description?: string }
+  selectionRevision?: number
 }>()
 
+const previewUrls = ref<string[]>([])
 const selectedPreviewIndex = ref(0)
 const selectedPreviewUrl = computed(() => (
-  props.template.exampleVideoUrls[selectedPreviewIndex.value] || null
+  previewUrls.value[selectedPreviewIndex.value] || null
 ))
 const previousPreviewUrl = computed(() => {
-  const previews = props.template.exampleVideoUrls
+  const previews = previewUrls.value
   return previews[(selectedPreviewIndex.value - 1 + previews.length) % previews.length]
 })
 const nextPreviewUrl = computed(() => {
-  const previews = props.template.exampleVideoUrls
+  const previews = previewUrls.value
   return previews[(selectedPreviewIndex.value + 1) % previews.length]
 })
 const selectedVideo = ref<HTMLVideoElement | null>(null)
 const previewMuted = ref(true)
 const failedPreviews = reactive(new Set<string>())
+const lastPreviewByTemplate = new Map<string, string>()
+let activeTemplateId: string | null = null
+
+function shufflePreviews(): void {
+  if (activeTemplateId && selectedPreviewUrl.value) {
+    lastPreviewByTemplate.set(activeTemplateId, selectedPreviewUrl.value)
+  }
+
+  const previews = shuffled(props.template.exampleVideoUrls)
+  if (previews.length > 1 && previews[0] === lastPreviewByTemplate.get(props.template.id)) {
+    const replacementIndex = 1 + Math.floor(Math.random() * (previews.length - 1))
+    const firstPreview = previews[0]
+    previews[0] = previews[replacementIndex]
+    previews[replacementIndex] = firstPreview
+  }
+
+  previewUrls.value = previews
+  selectedPreviewIndex.value = 0
+  activeTemplateId = props.template.id
+}
 
 async function playSelectedPreview(): Promise<void> {
   await nextTick()
@@ -117,12 +140,12 @@ async function playSelectedPreview(): Promise<void> {
 }
 
 function showPreviousPreview(): void {
-  const count = props.template.exampleVideoUrls.length
+  const count = previewUrls.value.length
   selectedPreviewIndex.value = (selectedPreviewIndex.value - 1 + count) % count
 }
 
 function showNextPreview(): void {
-  const count = props.template.exampleVideoUrls.length
+  const count = previewUrls.value.length
   selectedPreviewIndex.value = (selectedPreviewIndex.value + 1) % count
 }
 
@@ -137,9 +160,11 @@ function syncPreviewMuted(event: Event): void {
   previewMuted.value = (event.currentTarget as HTMLVideoElement).muted
 }
 
-watch(() => props.template.id, () => {
-  selectedPreviewIndex.value = 0
-}, { flush: 'sync' })
+watch([
+  () => props.template.id,
+  () => props.template.exampleVideoUrls,
+  () => props.selectionRevision,
+], shufflePreviews, { immediate: true })
 
 watch(selectedVideo, (video, previousVideo) => {
   previousVideo?.pause()
