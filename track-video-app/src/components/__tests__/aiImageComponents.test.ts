@@ -103,7 +103,7 @@ describe('AI-image picker components', () => {
     expect(wrapper.text()).toContain('Selected video template')
 
     await wrapper.find('video').trigger('error')
-    expect(wrapper.text()).toContain('Unavailable')
+    expect(wrapper.find('.selected-template').text()).toContain('Preview unavailable')
 
     await wrapper.findAll('.template-card')[0].trigger('keydown', { key: 'ArrowRight' })
     expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['vinyl-orbit'])

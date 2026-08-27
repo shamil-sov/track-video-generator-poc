@@ -11,6 +11,7 @@ export interface AiImageVideoTemplate {
   name: string
   description: string
   exampleVideoUrl: string
+  exampleVideoUrls?: string[]
 }
 
 export interface AiImageTrackSnapshot {

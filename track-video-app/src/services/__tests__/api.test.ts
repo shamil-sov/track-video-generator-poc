@@ -1,8 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createAiGeneratedImageJob,
+  createAiImageVideoJob,
   deleteAiGeneratedImageJob,
   getAiGeneratedImageJobs,
+  getAiImageVideoTemplates,
   getAiImageVisualStyles,
   getVideoTemplates,
 } from '@/services/api'
@@ -65,6 +67,47 @@ describe('API client', () => {
     const styles = await getAiImageVisualStyles()
 
     expect(styles.map(style => style.exampleImageUrls)).toEqual([[], ['only.jpg']])
+  })
+
+  it.each([
+    { exampleVideoUrls: ['first.mp4', 'second.mp4', 'third.mp4', 'fourth.mp4'] },
+    {},
+  ])('loads new and legacy AI-video template catalogue responses: %j', async previewFields => {
+    const templates = [{
+      id: 'vinyl-orbit',
+      name: 'Vinyl Launch',
+      description: 'A record emerges from the generated artwork.',
+      exampleVideoUrl: 'canonical.mp4',
+      ...previewFields,
+    }]
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: templates,
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getAiImageVideoTemplates()).resolves.toEqual(templates)
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/track-video-generator/ai-image-video-templates')
+  })
+
+  it('submits AI-image video jobs with only the track URL and selected catalogue IDs', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      jobId: 'video-job',
+      status: 'queued',
+      triggeredAt: '2026-08-27T10:00:00Z',
+    }), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const trackUrl = 'https://test.bandlab.com/track/5f42bf92-e3de-ed11-8aae-501ac5ee31b6'
+
+    await createAiImageVideoJob(trackUrl, 'vinyl-orbit', 'living-impasto')
+
+    const [url, request] = fetchMock.mock.calls[0]
+    expect(String(url)).toContain('/track-video-generator/ai-image-video-jobs')
+    expect(request.method).toBe('POST')
+    expect(JSON.parse(request.body)).toEqual({
+      trackUrl,
+      template: 'vinyl-orbit',
+      visualStyle: 'living-impasto',
+    })
   })
 
   it('preserves every visual style returned by the catalogue', async () => {
