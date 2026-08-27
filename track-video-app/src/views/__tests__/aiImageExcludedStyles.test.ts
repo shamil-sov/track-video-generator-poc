@@ -89,7 +89,7 @@ async function mountPage(url = '/ai-image-videos/excluded-styles') {
 
 enableAutoUnmount(afterEach)
 
-describe('Excluded AI visual styles', () => {
+describe('Not-included AI visual styles', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     const state = useAiImageVideoJobs()
@@ -111,8 +111,11 @@ describe('Excluded AI visual styles', () => {
   it('opens directly as a read-only AI-video sub-tab and loads only excluded styles', async () => {
     const { wrapper } = await mountPage()
 
-    expect(wrapper.get('h1').text()).toBe('Excluded visual styles')
-    expect(wrapper.text()).toContain('Preview only. These styles are excluded from video generation.')
+    expect(wrapper.get('h1').text()).toBe('Not-included visual styles')
+    expect(wrapper.get('.styles-header p').text()).toBe(
+      'These styles are not currently included in video generation but may be added after a review of their fit for the BandLab audience.',
+    )
+    expect(wrapper.get('.ai-video-section-nav a[href="/ai-image-videos/excluded-styles"]').text()).toBe('Not-included visual styles')
     expect(getAiImageExcludedVisualStyles).toHaveBeenCalledOnce()
     expect(getAiImageVisualStyles).not.toHaveBeenCalled()
     expect(getAiImageVideoTemplates).not.toHaveBeenCalled()
@@ -178,14 +181,14 @@ describe('Excluded AI visual styles', () => {
       resolveStyles = resolve
     }))
     const { wrapper } = await mountPage()
-    expect(wrapper.find('[aria-label="Loading excluded visual styles"]').exists()).toBe(true)
-    expect(wrapper.get('[aria-label="Refresh excluded visual styles"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[aria-label="Loading not-included visual styles"]').exists()).toBe(true)
+    expect(wrapper.get('[aria-label="Refresh not-included visual styles"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('.empty-state').exists()).toBe(false)
 
     resolveStyles([])
     await flushPromises()
-    expect(wrapper.find('[aria-label="Loading excluded visual styles"]').exists()).toBe(false)
-    expect(wrapper.get('.empty-state').text()).toBe('No excluded visual styles.')
+    expect(wrapper.find('[aria-label="Loading not-included visual styles"]').exists()).toBe(false)
+    expect(wrapper.get('.empty-state').text()).toBe('No styles in this list.')
     expect(wrapper.find('.style-picker').exists()).toBe(false)
   })
 
@@ -205,12 +208,12 @@ describe('Excluded AI visual styles', () => {
   it('preserves the previewed style on refresh and selects a remaining style if it was removed', async () => {
     const { wrapper } = await mountPage()
     await wrapper.findAll('.style-card')[1].trigger('click')
-    await wrapper.get('[aria-label="Refresh excluded visual styles"]').trigger('click')
+    await wrapper.get('[aria-label="Refresh not-included visual styles"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('.selected-preview__copy strong').text()).toBe('Sandglass Fable')
 
     vi.mocked(getAiImageExcludedVisualStyles).mockResolvedValueOnce([excludedStyles[0]])
-    await wrapper.get('[aria-label="Refresh excluded visual styles"]').trigger('click')
+    await wrapper.get('[aria-label="Refresh not-included visual styles"]').trigger('click')
     await flushPromises()
     expect(wrapper.get('.selected-preview__copy strong').text()).toBe('Macro Relic')
     expect(wrapper.findAll('.style-card')).toHaveLength(1)

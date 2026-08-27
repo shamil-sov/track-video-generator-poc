@@ -6,13 +6,16 @@
       <section aria-labelledby="excluded-styles-heading">
         <div class="styles-header">
           <div>
-            <h1 id="excluded-styles-heading">Excluded visual styles</h1>
-            <p>Preview only. These styles are excluded from video generation.</p>
+            <h1 id="excluded-styles-heading">Not-included visual styles</h1>
+            <p>
+              These styles are not currently included in video generation but may be added
+              after a review of their fit for the BandLab audience.
+            </p>
           </div>
           <v-btn
             variant="tonal"
             prepend-icon="mdi-refresh"
-            aria-label="Refresh excluded visual styles"
+            aria-label="Refresh not-included visual styles"
             :loading="loading"
             :disabled="loading"
             @click="loadStyles"
@@ -28,7 +31,7 @@
           </template>
         </v-alert>
 
-        <div v-if="loading" role="status" aria-label="Loading excluded visual styles">
+        <div v-if="loading" role="status" aria-label="Loading not-included visual styles">
           <v-skeleton-loader type="image, article" />
         </div>
         <AiVisualStylePicker
@@ -36,7 +39,7 @@
           v-model="selectedStyle"
           :styles="styles"
         />
-        <p v-else-if="!error" class="empty-state">No excluded visual styles.</p>
+        <p v-else-if="!error" class="empty-state">No styles in this list.</p>
       </section>
     </v-container>
   </main>
@@ -70,7 +73,7 @@ async function loadStyles(): Promise<void> {
   } catch (errorValue) {
     error.value = errorValue instanceof Error
       ? errorValue.message
-      : 'Could not load excluded visual styles.'
+      : 'Could not load not-included visual styles.'
   } finally {
     loading.value = false
   }

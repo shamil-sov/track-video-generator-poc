@@ -25,7 +25,7 @@
       rounded="lg"
       prepend-icon="mdi-image-off-outline"
     >
-      Excluded visual styles
+      Not-included visual styles
     </v-btn>
   </nav>
 </template>
