@@ -83,6 +83,8 @@
         <v-icon icon="mdi-chevron-right" size="27" />
       </button>
     </div>
+
+    <slot name="preview-caption" :preview-url="selectedPreviewUrl" />
   </section>
 </template>
 

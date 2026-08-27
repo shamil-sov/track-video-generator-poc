@@ -4,7 +4,13 @@
       v-if="selectedTemplate"
       :template="selectedTemplate"
       :selection-revision="selectionRevision"
-    />
+    >
+      <template #preview-caption="{ previewUrl }">
+        <p v-if="previewVisualStyleName(previewUrl)" class="preview-visual-style">
+          Preview visual style: <strong>{{ previewVisualStyleName(previewUrl) }}</strong>
+        </p>
+      </template>
+    </TemplatePreviewGallery>
 
     <div class="template-grid" role="radiogroup" aria-label="AI-image video template">
       <button
@@ -68,16 +74,24 @@ const model = defineModel<string | null>({ required: true })
 const selectionRevision = ref(0)
 const previewTemplates = computed(() => props.templates.map(template => ({
   ...template,
-  // Older catalogue responses contain only the canonical preview.
-  exampleVideoUrls: template.exampleVideoUrls?.length
-    ? template.exampleVideoUrls
-    : [template.exampleVideoUrl],
+  // Prefer previews with visual-style metadata; older catalogues provide only URLs.
+  exampleVideoUrls: template.exampleVideos?.length
+    ? template.exampleVideos.map(example => example.videoUrl)
+    : template.exampleVideoUrls?.length
+      ? template.exampleVideoUrls
+      : [template.exampleVideoUrl],
 })))
 const selectedTemplate = computed(() => (
   previewTemplates.value.find(template => template.id === model.value) || null
 ))
 const buttonElements = new Map<string, HTMLButtonElement>()
 const failedPreviews = reactive(new Set<string>())
+
+function previewVisualStyleName(previewUrl: string | null): string | undefined {
+  return selectedTemplate.value?.exampleVideos?.find(example => (
+    example.videoUrl === previewUrl
+  ))?.visualStyle.name
+}
 
 watch(() => props.templates, templates => {
   if (!model.value && templates.length) {
@@ -122,6 +136,19 @@ function selectAdjacentTemplate(id: string, offset: number): void {
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.preview-visual-style {
+  margin: 0;
+  color: rgba(var(--v-theme-on-surface), 0.72);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.preview-visual-style strong {
+  color: rgb(var(--v-theme-on-surface));
+  font-weight: 700;
 }
 
 .template-grid {

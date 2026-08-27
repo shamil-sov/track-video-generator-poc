@@ -12,6 +12,10 @@ export interface AiImageVideoTemplate {
   description: string
   exampleVideoUrl: string
   exampleVideoUrls?: string[]
+  exampleVideos?: {
+    videoUrl: string
+    visualStyle: Pick<AiImageVisualStyle, 'id' | 'name'>
+  }[]
 }
 
 export interface AiImageTrackSnapshot {

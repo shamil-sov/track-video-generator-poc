@@ -23,6 +23,16 @@ const templates: AiImageVideoTemplate[] = [
   },
 ]
 
+const templateWithVisualStyles: AiImageVideoTemplate = {
+  ...templates[0],
+  exampleVideos: [
+    { videoUrl: 'styled-1.mp4', visualStyle: { id: 'living-impasto', name: 'Living Impasto' } },
+    { videoUrl: 'styled-2.mp4', visualStyle: { id: 'leaded-light', name: 'Leaded Light' } },
+    { videoUrl: 'styled-3.mp4', visualStyle: { id: 'museum-still-life', name: 'Museum Still Life' } },
+    { videoUrl: 'styled-4.mp4', visualStyle: { id: 'lidar-ghostscape', name: 'LiDAR Ghostscape' } },
+  ],
+}
+
 function mountPicker(items = templates) {
   return mount(AiVideoTemplatePicker, {
     props: {
@@ -47,6 +57,78 @@ describe('AI-image video template previews', () => {
   })
 
   afterEach(() => vi.restoreAllMocks())
+
+  it('prefers structured previews and explicitly labels their visual style, separately from the template name', () => {
+    const wrapper = mountPicker([templateWithVisualStyles])
+
+    expect(wrapper.get('.selected-template__video').attributes('src')).toBe('styled-1.mp4')
+    expect(wrapper.get('.template-preview').attributes('src')).toBe('styled-1.mp4')
+    expect(wrapper.get('.selected-template__copy > strong').text()).toBe('Vinyl Launch')
+    expect(wrapper.get('.preview-visual-style').text()).toBe('Preview visual style: Living Impasto')
+    expect(wrapper.get('[aria-checked="true"]').text()).toContain('Vinyl Launch')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('keeps visual-style names matched to shuffled videos through navigation and reselection', async () => {
+    vi.mocked(Math.random).mockReturnValue(0)
+    const original = structuredClone(templateWithVisualStyles)
+    const wrapper = mountPicker([templateWithVisualStyles])
+    const expectPreview = (videoUrl: string, visualStyleName: string) => {
+      expect(wrapper.get('.selected-template__video').attributes('src')).toBe(videoUrl)
+      expect(wrapper.get('.preview-visual-style').text()).toBe(`Preview visual style: ${visualStyleName}`)
+    }
+
+    expectPreview('styled-2.mp4', 'Leaded Light')
+    for (const [url, name] of [
+      ['styled-3.mp4', 'Museum Still Life'],
+      ['styled-4.mp4', 'LiDAR Ghostscape'],
+      ['styled-1.mp4', 'Living Impasto'],
+      ['styled-2.mp4', 'Leaded Light'],
+    ]) {
+      await wrapper.get('[aria-label="Show next preview"]').trigger('click')
+      expectPreview(url, name)
+    }
+
+    await wrapper.get('[aria-label="Show previous preview"]').trigger('click')
+    expectPreview('styled-1.mp4', 'Living Impasto')
+    await wrapper.get('[aria-label="Select next preview"]').trigger('click')
+    expectPreview('styled-2.mp4', 'Leaded Light')
+    await wrapper.get('.template-card').trigger('click')
+    expectPreview('styled-3.mp4', 'Museum Still Life')
+    expect(templateWithVisualStyles).toEqual(original)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('updates or hides the preview visual-style label when selecting another template, without changing its ID', async () => {
+    const wrapper = mountPicker([
+      templateWithVisualStyles,
+      {
+        ...templates[1],
+        exampleVideos: [{
+          videoUrl: 'styled-orbit.mp4',
+          visualStyle: { id: 'photon-trail-narrative', name: 'Photon Trail Narrative' },
+        }],
+      },
+      { ...templates[1], id: 'legacy-template' },
+    ])
+
+    await wrapper.findAll('.template-card')[1].trigger('click')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['orbit'])
+    await wrapper.setProps({ modelValue: 'orbit' })
+    expect(wrapper.get('.selected-template__video').attributes('src')).toBe('styled-orbit.mp4')
+    expect(wrapper.get('.preview-visual-style').text()).toBe('Preview visual style: Photon Trail Narrative')
+
+    await wrapper.setProps({ modelValue: 'legacy-template' })
+    expect(wrapper.get('.selected-template__video').attributes('src')).toBe('orbit-1.mp4')
+    expect(wrapper.find('.preview-visual-style').exists()).toBe(false)
+  })
+
+  it.each([undefined, []])('keeps URL-only previews working without a visual-style label when exampleVideos is %s', exampleVideos => {
+    const wrapper = mountPicker([{ ...templateWithVisualStyles, exampleVideos }])
+
+    expect(wrapper.get('.selected-template__video').attributes('src')).toBe('vinyl-1.mp4')
+    expect(wrapper.find('.preview-visual-style').exists()).toBe(false)
+  })
 
   it('prefers all four gallery previews, with looping navigation outside the central player', async () => {
     const wrapper = mountPicker()
@@ -81,6 +163,7 @@ describe('AI-image video template previews', () => {
     expect(wrapper.find('.preview-carousel--single').exists()).toBe(true)
     expect(wrapper.findAll('.carousel-arrow, .carousel-peek')).toHaveLength(0)
     expect((wrapper.get('video').element as HTMLVideoElement).controls).toBe(true)
+    expect(wrapper.find('.preview-visual-style').exists()).toBe(false)
   })
 
   it('resets the preview on template selection and emits the unchanged template ID', async () => {

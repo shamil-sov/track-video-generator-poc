@@ -105,6 +105,13 @@ describe('API client', () => {
   })
 
   it.each([
+    {
+      exampleVideos: [1, 2, 3, 4].map(index => ({
+        videoUrl: `preview-${index}.mp4`,
+        visualStyle: { id: `style-${index}`, name: `Visual Style ${index}` },
+      })),
+      exampleVideoUrls: ['first.mp4', 'second.mp4', 'third.mp4', 'fourth.mp4'],
+    },
     { exampleVideoUrls: ['first.mp4', 'second.mp4', 'third.mp4', 'fourth.mp4'] },
     {},
   ])('loads new and legacy AI-video template catalogue responses: %j', async previewFields => {
