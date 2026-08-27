@@ -18,6 +18,15 @@
     >
       Insights
     </v-btn>
+    <v-btn
+      :to="{ name: 'ai-image-excluded-styles' }"
+      :variant="route.name === 'ai-image-excluded-styles' ? 'tonal' : 'text'"
+      :color="route.name === 'ai-image-excluded-styles' ? 'primary' : undefined"
+      rounded="lg"
+      prepend-icon="mdi-image-off-outline"
+    >
+      Excluded visual styles
+    </v-btn>
   </nav>
 </template>
 
@@ -30,8 +39,10 @@ const route = useRoute()
 <style scoped>
 .ai-video-section-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
   width: fit-content;
+  max-width: 100%;
   margin-bottom: 18px;
   padding: 5px;
   background: rgba(var(--v-theme-surface), 0.72);

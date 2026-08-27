@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
+  API_BASE_URL,
   createAiGeneratedImageJob,
   createAiImageVideoJob,
   deleteAiGeneratedImageJob,
   getAiGeneratedImageJobs,
+  getAiImageExcludedVisualStyles,
   getAiImageVideoTemplates,
   getAiImageVisualStyles,
   getVideoTemplates,
@@ -32,6 +34,39 @@ describe('API client', () => {
       'third.jpg',
       'first.jpg',
     ])
+  })
+
+  it('loads only the excluded catalogue and shuffles its examples without reordering styles', async () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0)
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      data: [
+        { id: 'macro-relic', name: 'Macro Relic', exampleImageUrls: ['first.jpg', 'second.jpg', 'third.jpg'] },
+        { id: 'sandglass-fable', name: 'Sandglass Fable', exampleImageUrls: ['only.jpg'] },
+      ],
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getAiImageExcludedVisualStyles()).resolves.toEqual([
+      { id: 'macro-relic', name: 'Macro Relic', exampleImageUrls: ['second.jpg', 'third.jpg', 'first.jpg'] },
+      { id: 'sandglass-fable', name: 'Sandglass Fable', exampleImageUrls: ['only.jpg'] },
+    ])
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      `${API_BASE_URL}/track-video-generator/ai-image-excluded-visual-styles`,
+    )
+  })
+
+  it('supports an empty excluded catalogue', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 })))
+
+    await expect(getAiImageExcludedVisualStyles()).resolves.toEqual([])
+  })
+
+  it('reports excluded catalogue API failures', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      message: 'Excluded styles unavailable',
+    }), { status: 503 })))
+
+    await expect(getAiImageExcludedVisualStyles()).rejects.toThrow('Excluded styles unavailable')
   })
 
   it('loads the cover-video template catalogue without changing its order or examples', async () => {

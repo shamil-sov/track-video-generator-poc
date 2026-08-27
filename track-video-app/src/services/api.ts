@@ -31,6 +31,7 @@ const VIDEO_TEMPLATES_URL = `${API_BASE_URL}/track-video-generator/video-templat
 
 const AI_IMAGE_API_URL = `${API_BASE_URL}/track-video-generator`
 const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
+const AI_IMAGE_EXCLUDED_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-excluded-visual-styles`
 const AI_IMAGE_TEMPLATES_URL = `${AI_IMAGE_API_URL}/ai-image-video-templates`
 const AI_IMAGE_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-video-jobs`
 const AI_IMAGE_GENERATION_JOBS_URL = `${AI_IMAGE_API_URL}/ai-image-jobs`
@@ -110,6 +111,16 @@ export async function getVideoTemplates(): Promise<VideoTemplateCatalogueItem[]>
 
 export async function getAiImageVisualStyles(): Promise<AiImageVisualStyle[]> {
   const response = await fetch(AI_IMAGE_STYLES_URL)
+  const styles = (await parseResponse<AiImageCatalogue<AiImageVisualStyle>>(response)).data
+
+  return styles.map(style => ({
+    ...style,
+    exampleImageUrls: shuffled(style.exampleImageUrls),
+  }))
+}
+
+export async function getAiImageExcludedVisualStyles(): Promise<AiImageVisualStyle[]> {
+  const response = await fetch(AI_IMAGE_EXCLUDED_STYLES_URL)
   const styles = (await parseResponse<AiImageCatalogue<AiImageVisualStyle>>(response)).data
 
   return styles.map(style => ({

@@ -6,6 +6,7 @@ A lightweight GitHub Pages client for the experimental BandLab Track Video Gener
 
 - creates cover-based videos with five motion templates and optional text overlays;
 - creates AI-image videos by combining a server-provided visual style with a server-provided motion template;
+- previews excluded visual styles and their example images in a separate, read-only AI-image videos tab;
 - follows queued and processing jobs automatically in separate cover-video and AI-image job histories;
 - browses both global video histories with search and filters;
 - plays completed MP4s and exposes full job metadata;
