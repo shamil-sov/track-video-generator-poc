@@ -116,7 +116,7 @@ export async function getAiImageVisualStyles(): Promise<AiImageVisualStyle[]> {
   return styles.map(style => ({
     ...style,
     exampleImageUrls: shuffled(style.exampleImageUrls),
-  }))
+  })).reverse()
 }
 
 export async function getAiImageExcludedVisualStyles(): Promise<AiImageVisualStyle[]> {
@@ -126,7 +126,7 @@ export async function getAiImageExcludedVisualStyles(): Promise<AiImageVisualSty
   return styles.map(style => ({
     ...style,
     exampleImageUrls: shuffled(style.exampleImageUrls),
-  }))
+  })).reverse()
 }
 
 export async function getAiImageVideoTemplates(): Promise<AiImageVideoTemplate[]> {

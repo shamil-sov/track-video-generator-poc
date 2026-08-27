@@ -95,7 +95,7 @@ const selectedTemplate = computed(() => (
 
 .template-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(110px, 150px));
+  grid-template-columns: repeat(4, minmax(110px, 150px));
   gap: 10px;
 }
 
@@ -159,12 +159,6 @@ const selectedTemplate = computed(() => (
   right: 8px;
   color: rgb(var(--v-theme-primary));
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
-}
-
-@media (max-width: 1100px) {
-  .template-grid {
-    grid-template-columns: repeat(3, minmax(110px, 150px));
-  }
 }
 
 @media (max-width: 620px) {

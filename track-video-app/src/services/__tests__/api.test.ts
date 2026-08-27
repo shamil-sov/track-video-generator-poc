@@ -36,7 +36,7 @@ describe('API client', () => {
     ])
   })
 
-  it('loads only the excluded catalogue and shuffles its examples without reordering styles', async () => {
+  it('loads only the not-included catalogue in reverse order and shuffles its examples', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
       data: [
@@ -47,8 +47,8 @@ describe('API client', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(getAiImageExcludedVisualStyles()).resolves.toEqual([
-      { id: 'macro-relic', name: 'Macro Relic', exampleImageUrls: ['second.jpg', 'third.jpg', 'first.jpg'] },
       { id: 'sandglass-fable', name: 'Sandglass Fable', exampleImageUrls: ['only.jpg'] },
+      { id: 'macro-relic', name: 'Macro Relic', exampleImageUrls: ['second.jpg', 'third.jpg', 'first.jpg'] },
     ])
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
       `${API_BASE_URL}/track-video-generator/ai-image-excluded-visual-styles`,
@@ -101,7 +101,7 @@ describe('API client', () => {
 
     const styles = await getAiImageVisualStyles()
 
-    expect(styles.map(style => style.exampleImageUrls)).toEqual([[], ['only.jpg']])
+    expect(styles.map(style => style.exampleImageUrls)).toEqual([['only.jpg'], []])
   })
 
   it.each([
@@ -145,7 +145,7 @@ describe('API client', () => {
     })
   })
 
-  it('preserves every visual style returned by the catalogue', async () => {
+  it('shows every available visual style in reverse catalogue order', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       data: [
         { id: 'living-impasto', name: 'Living Impasto', exampleImageUrls: ['kept.jpg'] },
@@ -157,11 +157,30 @@ describe('API client', () => {
     const styles = await getAiImageVisualStyles()
 
     expect(styles.map(style => style.id)).toEqual([
-      'living-impasto',
-      'moire-rotor-ballet',
       'sandglass-fable',
+      'moire-rotor-ballet',
+      'living-impasto',
     ])
   })
+
+  it.each([getAiImageVisualStyles, getAiImageExcludedVisualStyles])(
+    'reverses visual styles without mutating the response or alternating order on reload',
+    async loadStyles => {
+      const data = [
+        { id: 'first', name: 'First', exampleImageUrls: ['first.jpg'] },
+        { id: 'second', name: 'Second', exampleImageUrls: ['second.jpg'] },
+        { id: 'third', name: 'Third', exampleImageUrls: ['third.jpg'] },
+      ]
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ data }),
+      }))
+
+      expect((await loadStyles()).map(style => style.id)).toEqual(['third', 'second', 'first'])
+      expect((await loadStyles()).map(style => style.id)).toEqual(['third', 'second', 'first'])
+      expect(data.map(style => style.id)).toEqual(['first', 'second', 'third'])
+    },
+  )
 
   it('submits a trimmed image prompt with optional track context', async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({

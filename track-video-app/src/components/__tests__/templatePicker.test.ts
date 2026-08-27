@@ -10,6 +10,27 @@ const passthroughStub = defineComponent({
 })
 
 describe('TemplatePicker', () => {
+  it('keeps all eight template options available in catalogue order', async () => {
+    const templates = Array.from({ length: 8 }, (_, index) => ({
+      id: `template-${index + 1}`,
+      name: `Template ${index + 1}`,
+      exampleVideoUrls: [`preview-${index + 1}.mp4`],
+    }))
+    const wrapper = mount(TemplatePicker, {
+      props: { modelValue: templates[0].id, templates },
+      global: {
+        stubs: { VIcon: passthroughStub },
+      },
+    })
+
+    const cards = wrapper.findAll('.template-grid .template-card')
+    expect(cards).toHaveLength(8)
+    expect(cards.map(card => card.text())).toEqual(templates.map(template => template.name))
+
+    await cards[7].trigger('click')
+    expect(wrapper.emitted('update:modelValue')?.at(-1)).toEqual(['template-8'])
+  })
+
   it('shows the selected template in a large preview and keeps compact choices below', async () => {
     const wrapper = mount(TemplatePicker, {
       props: {
