@@ -16,7 +16,7 @@
           class="prompt-input__textarea"
           rows="6"
           placeholder="A translucent glass sculpture floating above a midnight ocean..."
-          :aria-describedby="`${inputId}-error ${inputId}-counter`"
+          :aria-describedby="[descriptionId, `${inputId}-error`, `${inputId}-counter`].filter(Boolean).join(' ')"
           :aria-invalid="Boolean(errorMessage)"
           :disabled="disabled"
           @blur="$emit('blur')"
@@ -36,6 +36,7 @@ import { computed, useId } from 'vue'
 defineProps<{
   disabled?: boolean
   errorMessage?: string | null
+  descriptionId?: string
 }>()
 defineEmits<{
   blur: []

@@ -46,10 +46,52 @@
         </header>
 
         <form @submit.prevent="handleSubmit">
-          <div class="generator-grid">
+          <div class="prompt-fields">
+            <v-text-field
+              v-model="trackUrl"
+              label="BandLab track URL"
+              placeholder="https://test.bandlab.com/track/..."
+              hint="Optional for custom prompts without track placeholders."
+              persistent-hint
+              variant="outlined"
+              density="comfortable"
+              prepend-inner-icon="mdi-link-variant"
+              :error-messages="trackUrlError"
+              :disabled="submitting"
+              clearable
+              autocomplete="url"
+              @blur="trackUrlTouched = true"
+            />
+
+            <section
+              id="style-placeholder-guide"
+              class="placeholder-guide"
+              aria-labelledby="style-placeholder-guide-title"
+            >
+              <v-icon icon="mdi-auto-fix" size="24" color="primary" aria-hidden="true" />
+              <div>
+                <h3 id="style-placeholder-guide-title">Use your track in the prompt</h3>
+                <p>
+                  Add a public BandLab track URL above to use these placeholders.
+                  They are filled in automatically when you generate.
+                </p>
+                <dl class="placeholder-guide__tokens">
+                  <div>
+                    <dt><code>{trackName}</code></dt>
+                    <dd>The track title</dd>
+                  </div>
+                  <div>
+                    <dt><code>{trackGenre}</code></dt>
+                    <dd>The track genre</dd>
+                  </div>
+                </dl>
+              </div>
+            </section>
+
             <div class="prompt-column">
               <StylePromptInput
                 v-model="prompt"
+                description-id="style-placeholder-guide"
                 :error-message="promptError"
                 :disabled="submitting"
                 @blur="promptTouched = true"
@@ -63,6 +105,7 @@
                     :key="idea.label"
                     size="small"
                     variant="tonal"
+                    :disabled="submitting"
                     @click="usePromptIdea(idea.prompt)"
                   >
                     {{ idea.label }}
@@ -70,33 +113,6 @@
                 </div>
               </div>
             </div>
-
-            <aside class="track-context">
-              <div>
-                <v-icon icon="mdi-music-box-multiple-outline" size="24" />
-                <div>
-                  <strong>Add track context</strong>
-                  <span>Optional</span>
-                </div>
-              </div>
-              <p>
-                Add a public BandLab track, then use
-                <code>{trackName}</code> and <code>{trackGenre}</code> inside your prompt.
-              </p>
-              <v-text-field
-                v-model="trackUrl"
-                label="BandLab track URL"
-                placeholder="https://test.bandlab.com/track/..."
-                variant="outlined"
-                density="comfortable"
-                prepend-inner-icon="mdi-link-variant"
-                :error-messages="trackUrlError"
-                :disabled="submitting"
-                clearable
-                autocomplete="url"
-                @blur="trackUrlTouched = true"
-              />
-            </aside>
           </div>
 
           <footer class="generator-footer">
@@ -306,16 +322,16 @@ const statusFilter = ref<'all' | TrackVideoJobStatus>('all')
 
 const promptIdeas = [
   {
+    label: 'Woodblock print',
+    prompt: 'Album cover art for {trackGenre} track titled "{trackName}". '
+      + 'Woodblock linocut style, earthy green and rust tones, tactile texture, '
+      + 'moody minimalism, includes text "{trackName}".',
+  },
+  {
     label: 'Dreamlike editorial',
-    prompt: 'Dreamlike editorial portrait, translucent fabrics, soft fog, pearl and cobalt palette, cinematic studio light',
-  },
-  {
-    label: 'Organic sculpture',
-    prompt: 'An impossible organic sculpture grown from glass, moss, and polished chrome, photographed at blue hour',
-  },
-  {
-    label: 'Track cover',
-    prompt: 'Create bold cover artwork for {trackName}, translating the energy of {trackGenre} into an unusual tactile world',
+    prompt: 'Dreamlike editorial artwork for the {trackGenre} track "{trackName}". '
+      + 'Translucent fabrics, soft fog, a pearl and cobalt palette, cinematic studio light, '
+      + 'and a surreal composition inspired by the track title.',
   },
 ]
 
@@ -373,7 +389,7 @@ const rawPromptError = computed(() => {
     (value.includes('{trackName}') || value.includes('{trackGenre}'))
     && !trackUrl.value?.trim()
   ) {
-    return 'Add a track URL when using track metadata placeholders.'
+    return 'Add a BandLab track URL above to use track placeholders.'
   }
   return null
 })
@@ -618,14 +634,13 @@ onBeforeUnmount(stopPolling)
   font-size: 0.78rem;
 }
 
-.generator-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.55fr) minmax(300px, 0.75fr);
+.prompt-fields {
+  display: flex;
+  flex-direction: column;
   gap: 20px;
 }
 
-.prompt-column,
-.track-context {
+.prompt-column {
   min-width: 0;
 }
 
@@ -649,41 +664,60 @@ onBeforeUnmount(stopPolling)
   flex-wrap: wrap;
 }
 
-.track-context {
+.placeholder-guide {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
   padding: 18px;
-  background: rgba(var(--v-theme-on-surface), 0.035);
-  border: 1px solid rgba(var(--v-theme-on-surface), 0.08);
-  border-radius: 16px;
+  background: rgba(var(--v-theme-primary), 0.09);
+  border: 1px solid rgba(var(--v-theme-primary), 0.3);
+  border-left: 4px solid rgb(var(--v-theme-primary));
+  border-radius: 14px;
 }
 
-.track-context > div:first-child {
-  display: flex;
-  gap: 11px;
-  align-items: center;
+.placeholder-guide > div {
+  min-width: 0;
 }
 
-.track-context > div:first-child div {
-  display: flex;
-  flex-direction: column;
+.placeholder-guide h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 750;
 }
 
-.track-context strong {
-  font-size: 0.82rem;
-}
-
-.track-context span,
-.track-context p {
-  color: rgba(var(--v-theme-on-surface), 0.48);
-  font-size: 0.68rem;
-}
-
-.track-context p {
-  margin: 16px 0;
+.placeholder-guide p {
+  margin: 6px 0 14px;
+  color: rgba(var(--v-theme-on-surface), 0.75);
+  font-size: 0.8rem;
   line-height: 1.55;
 }
 
-.track-context code {
+.placeholder-guide__tokens {
+  display: flex;
+  gap: 12px 28px;
+  flex-wrap: wrap;
+}
+
+.placeholder-guide__tokens > div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.placeholder-guide code {
+  padding: 4px 7px;
   color: rgb(var(--v-theme-primary));
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(var(--v-theme-primary), 0.12);
+  border-radius: 6px;
+}
+
+.placeholder-guide dd {
+  margin: 0;
+  color: rgba(var(--v-theme-on-surface), 0.8);
+  font-size: 0.78rem;
 }
 
 .generator-footer {
@@ -832,10 +866,6 @@ onBeforeUnmount(stopPolling)
 }
 
 @media (max-width: 1000px) {
-  .generator-grid {
-    grid-template-columns: 1fr;
-  }
-
   .image-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
