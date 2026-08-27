@@ -93,10 +93,20 @@ describe('Style Explorer prompt guidance', () => {
     expect(state.submitJob).not.toHaveBeenCalled()
   })
 
-  it('uses a simple page title without the introductory description', () => {
+  it('uses a functional header and labels without promotional content', () => {
     const wrapper = mountExplorer()
-    expect(wrapper.get('.hero h1').text()).toBe('Explore styles')
-    expect(wrapper.find('.hero p').exists()).toBe(false)
+    expect(wrapper.get('.page-header h1').text()).toBe('Style explorer')
+    expect(wrapper.find('.hero').exists()).toBe(false)
+    expect(wrapper.find('.eyebrow').exists()).toBe(false)
+    expect(wrapper.get('.generator-header h2').text()).toBe('Generate image')
+    expect(wrapper.get('.gallery-header h2').text()).toBe('Image history')
+    expect(wrapper.get('.empty-state h3').text()).toBe('No image jobs yet')
+    expect(wrapper.text()).not.toContain('Open visual playground')
+    expect(wrapper.text()).not.toContain('What should the image feel like?')
+    expect(wrapper.text()).not.toContain('Shared experiments')
+    expect(wrapper.findAll('.job-summary dt').map(label => label.text())).toEqual(['Jobs', 'Completed', 'Generating'])
+    expect(wrapper.findAll('.job-summary dd').map(value => value.text())).toEqual(['0', '0', '0'])
+    expect(wrapper.text()).toContain('Prompts and generated images are publicly accessible.')
   })
 
   it('puts the track URL and accessible placeholder guide above the prompt', () => {
