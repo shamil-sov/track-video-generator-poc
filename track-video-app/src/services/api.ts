@@ -1,6 +1,7 @@
 import type {
   ApiError,
   CoverPreviewTrackMetadata,
+  CoverPreviewBatchResult,
   CoverVideoPreview,
   CoverVideoPreviewRenderOptions,
   CreateTrackVideoJobResult,
@@ -33,6 +34,8 @@ export const API_BASE_URL = (
 const JOBS_URL = `${API_BASE_URL}/track-video-generator/jobs`
 const VIDEO_TEMPLATES_URL = `${API_BASE_URL}/track-video-generator/video-templates`
 const VIDEO_PREVIEWS_URL = `${API_BASE_URL}/track-video-generator/video-previews`
+const VIDEO_PREVIEW_BATCHES_URL = `${API_BASE_URL}/track-video-generator/video-preview-batches`
+const IMAGE_PREVIEW_BATCHES_URL = `${API_BASE_URL}/track-video-generator/image-preview-batches`
 
 const AI_IMAGE_API_URL = `${API_BASE_URL}/track-video-generator`
 const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
@@ -189,6 +192,38 @@ export async function createCoverVideoPreview(
   })
 
   return parseResponse<CoverVideoPreview>(response)
+}
+
+async function createCoverPreviewBatch(
+  url: string,
+  trackCoverUrl: string,
+  signal?: AbortSignal,
+): Promise<CoverPreviewBatchResult> {
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ trackCoverUrl }),
+    cache: 'no-store',
+    signal,
+  })
+
+  return parseResponse<CoverPreviewBatchResult>(response)
+}
+
+export function createCoverVideoPreviewBatch(
+  trackCoverUrl: string,
+  signal?: AbortSignal,
+): Promise<CoverPreviewBatchResult> {
+  return createCoverPreviewBatch(VIDEO_PREVIEW_BATCHES_URL, trackCoverUrl, signal)
+}
+
+export function createCoverImagePreviewBatch(
+  trackCoverUrl: string,
+  signal?: AbortSignal,
+): Promise<CoverPreviewBatchResult> {
+  return createCoverPreviewBatch(IMAGE_PREVIEW_BATCHES_URL, trackCoverUrl, signal)
 }
 
 export async function getAiImageVisualStyles(): Promise<AiImageVisualStyle[]> {

@@ -27,6 +27,15 @@
     >
       Template previews
     </v-btn>
+    <v-btn
+      :to="{ name: 'cover-template-comparison' }"
+      :variant="route.name === 'cover-template-comparison' ? 'tonal' : 'text'"
+      :color="route.name === 'cover-template-comparison' ? 'primary' : undefined"
+      rounded="lg"
+      prepend-icon="mdi-view-grid-outline"
+    >
+      Compare templates
+    </v-btn>
   </nav>
 </template>
 

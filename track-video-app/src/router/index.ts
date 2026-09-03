@@ -21,6 +21,11 @@ const router = createRouter({
       component: () => import('@/views/CoverVideoPreviewsView.vue'),
     },
     {
+      path: '/compare-templates',
+      name: 'cover-template-comparison',
+      component: () => import('@/views/CoverTemplateComparisonView.vue'),
+    },
+    {
       path: '/ai-image-videos',
       name: 'ai-image-videos',
       component: () => import('@/views/AiImageVideosView.vue'),

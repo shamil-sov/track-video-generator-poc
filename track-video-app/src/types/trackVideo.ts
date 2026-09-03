@@ -82,6 +82,18 @@ export interface CoverVideoPreview {
   videoUrl: string
 }
 
+export type CoverPreviewBatchKind = 'video' | 'image'
+
+export interface CoverPreviewBatchItem {
+  template: TrackVideoTemplate
+  previewUrl: string
+}
+
+export interface CoverPreviewBatchResult {
+  data: CoverPreviewBatchItem[]
+  totalDurationMs: number
+}
+
 export interface JobsPage {
   data: TrackVideoJob[]
   paging: {

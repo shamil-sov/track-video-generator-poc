@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   API_BASE_URL,
   createJob,
+  createCoverImagePreviewBatch,
+  createCoverVideoPreviewBatch,
   createAiGeneratedImageJob,
   createAiImageVideoJob,
   createCoverVideoPreview,
@@ -26,7 +28,9 @@ describe('API client', () => {
       status: 'queued',
       triggeredAt: '2026-09-03T08:00:00Z',
     }
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(result), { status: 201 }))
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(
+      new Response(JSON.stringify(result), { status: 201 }),
+    ))
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(createJob('https://www.bandlab.com/track/track-id', 'orbit')).resolves.toEqual(result)
@@ -219,6 +223,44 @@ describe('API client', () => {
         signal: undefined,
       },
     )
+  })
+
+  it('requests fresh video and image preview batches with only the cover URL', async () => {
+    const result = {
+      data: [{ template: 'orbit', previewUrl: 'https://cdn.example/orbit.mp4' }],
+      totalDurationMs: 1250,
+    }
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(
+      new Response(JSON.stringify(result), { status: 201 }),
+    ))
+    vi.stubGlobal('fetch', fetchMock)
+    const coverUrl = 'https://bl-prod-images.azureedge.net/v1.3/songs/cover-id/'
+
+    await expect(createCoverVideoPreviewBatch(coverUrl)).resolves.toEqual(result)
+    await expect(createCoverImagePreviewBatch(coverUrl)).resolves.toEqual(result)
+
+    expect(fetchMock.mock.calls).toEqual([
+      [
+        `${API_BASE_URL}/track-video-generator/video-preview-batches`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trackCoverUrl: coverUrl }),
+          cache: 'no-store',
+          signal: undefined,
+        },
+      ],
+      [
+        `${API_BASE_URL}/track-video-generator/image-preview-batches`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trackCoverUrl: coverUrl }),
+          cache: 'no-store',
+          signal: undefined,
+        },
+      ],
+    ])
   })
 
   it('preserves empty and single-image example lists', async () => {

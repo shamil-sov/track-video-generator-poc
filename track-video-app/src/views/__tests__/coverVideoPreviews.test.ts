@@ -281,8 +281,9 @@ describe('Cover preview navigation', () => {
     })
 
     expect(router.currentRoute.value.name).toBe('cover-video-previews')
-    expect(wrapper.findAll('a')).toHaveLength(3)
+    expect(wrapper.findAll('a')).toHaveLength(4)
     expect(wrapper.get('a[href="/video-previews"]').text()).toBe('Template previews')
     expect(wrapper.get('a[href="/video-previews"]').attributes('data-variant')).toBe('tonal')
+    expect(wrapper.get('a[href="/compare-templates"]').text()).toBe('Compare templates')
   })
 })
