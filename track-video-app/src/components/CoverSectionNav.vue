@@ -18,6 +18,15 @@
     >
       Insights
     </v-btn>
+    <v-btn
+      :to="{ name: 'cover-video-previews' }"
+      :variant="route.name === 'cover-video-previews' ? 'tonal' : 'text'"
+      :color="route.name === 'cover-video-previews' ? 'primary' : undefined"
+      rounded="lg"
+      prepend-icon="mdi-motion-play-outline"
+    >
+      Template previews
+    </v-btn>
   </nav>
 </template>
 
@@ -30,6 +39,7 @@ const route = useRoute()
 <style scoped>
 .cover-section-nav {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
   width: fit-content;
   margin-bottom: 18px;
@@ -45,7 +55,7 @@ const route = useRoute()
   }
 
   .cover-section-nav :deep(.v-btn) {
-    flex: 1;
+    flex: 1 1 auto;
   }
 }
 </style>

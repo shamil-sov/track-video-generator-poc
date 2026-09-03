@@ -3,11 +3,13 @@ import {
   API_BASE_URL,
   createAiGeneratedImageJob,
   createAiImageVideoJob,
+  createCoverVideoPreview,
   deleteAiGeneratedImageJob,
   getAiGeneratedImageJobs,
   getAiImageExcludedVisualStyles,
   getAiImageVideoTemplates,
   getAiImageVisualStyles,
+  getCoverPreviewTrack,
   getVideoTemplates,
 } from '@/services/api'
 
@@ -89,6 +91,105 @@ describe('API client', () => {
 
     await expect(getVideoTemplates()).resolves.toEqual(templates)
     expect(String(fetchMock.mock.calls[0][0])).toContain('/track-video-generator/video-templates')
+  })
+
+  it.each([
+    {
+      trackUrl: 'https://test.bandlab.com/track/8398d42e-0504-40c6-b882-bbf42294c641?revId=bef1e49f-d197-4d4f-83f4-fb06eab5c6b0',
+      apiHost: 'api-test.bandlab.com',
+      pictureUrl: 'https://bl-uat-images.azureedge.net/v1.3/songs/11111111-1111-1111-1111-111111111111/',
+      previewSupported: true,
+    },
+    {
+      trackUrl: 'https://www.bandlab.com/track/8398d42e-0504-40c6-b882-bbf42294c641?revId=bef1e49f-d197-4d4f-83f4-fb06eab5c6b0',
+      apiHost: 'api.bandlab.com',
+      pictureUrl: 'https://bl-prod-images.azureedge.net/v1.3/users/profile-picture-id/',
+      previewSupported: false,
+    },
+  ])('loads preview metadata from the matching BandLab environment: $apiHost', async ({
+    trackUrl,
+    apiHost,
+    pictureUrl,
+    previewSupported,
+  }) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      id: '8398d42e-0504-40c6-b882-bbf42294c641',
+      creator: { name: 'Post creator', username: 'post_creator' },
+      revision: {
+        id: 'bef1e49f-d197-4d4f-83f4-fb06eab5c6b0',
+        song: {
+          name: 'Blue Ridge Mountains',
+          author: { name: 'Track artist', username: 'track_artist' },
+          picture: { url: pictureUrl },
+        },
+      },
+    }), { status: 200 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(getCoverPreviewTrack(trackUrl)).resolves.toEqual({
+      trackUrl,
+      name: 'Blue Ridge Mountains',
+      artistName: 'Track artist',
+      artistUsername: 'track_artist',
+      pictureUrl,
+      previewSupported,
+    })
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      `https://${apiHost}/v1.3/posts/8398d42e-0504-40c6-b882-bbf42294c641`,
+      { cache: 'no-store', signal: undefined },
+    )
+  })
+
+  it('rejects track metadata when the configured revision no longer matches', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      id: '8398d42e-0504-40c6-b882-bbf42294c641',
+      creator: { name: 'Artist' },
+      revision: {
+        id: '00000000-0000-0000-0000-000000000000',
+        song: { name: 'Changed track', picture: { url: 'https://bl-uat-images.azureedge.net/v1.3/songs/cover/' } },
+      },
+    }), { status: 200 })))
+
+    await expect(getCoverPreviewTrack(
+      'https://test.bandlab.com/track/8398d42e-0504-40c6-b882-bbf42294c641?revId=bef1e49f-d197-4d4f-83f4-fb06eab5c6b0',
+    )).rejects.toThrow('no longer matches its configured revision')
+  })
+
+  it('requests a new synchronous cover preview without adding client-side cache data', async () => {
+    const result = {
+      previewId: 'preview-id',
+      template: 'orbit',
+      status: 'completed',
+      triggeredAt: '2026-09-02T08:00:00Z',
+      processingStartedAt: '2026-09-02T08:00:00.015Z',
+      finishedAt: '2026-09-02T08:00:01.250Z',
+      imageDownloadDurationMs: 110,
+      renderDurationMs: 920,
+      uploadDurationMs: 90,
+      processingDurationMs: 1235,
+      totalDurationMs: 1250,
+      videoUrl: 'https://cdn.example/video.mp4',
+    }
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(result), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createCoverVideoPreview(
+      'https://bl-prod-images.azureedge.net/v1.3/songs/cover-id/',
+      'orbit',
+    )).resolves.toEqual(result)
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      `${API_BASE_URL}/track-video-generator/video-previews`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackCoverUrl: 'https://bl-prod-images.azureedge.net/v1.3/songs/cover-id/',
+          template: 'orbit',
+        }),
+        cache: 'no-store',
+        signal: undefined,
+      },
+    )
   })
 
   it('preserves empty and single-image example lists', async () => {

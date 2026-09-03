@@ -1,5 +1,7 @@
 import type {
   ApiError,
+  CoverPreviewTrackMetadata,
+  CoverVideoPreview,
   CreateTrackVideoJobResult,
   JobsPage,
   TrackVideoJob,
@@ -29,6 +31,7 @@ export const API_BASE_URL = (
 
 const JOBS_URL = `${API_BASE_URL}/track-video-generator/jobs`
 const VIDEO_TEMPLATES_URL = `${API_BASE_URL}/track-video-generator/video-templates`
+const VIDEO_PREVIEWS_URL = `${API_BASE_URL}/track-video-generator/video-previews`
 
 const AI_IMAGE_API_URL = `${API_BASE_URL}/track-video-generator`
 const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
@@ -96,6 +99,97 @@ export async function getAllJobs(): Promise<TrackVideoJob[]> {
 export async function getVideoTemplates(): Promise<VideoTemplateCatalogueItem[]> {
   const response = await fetch(VIDEO_TEMPLATES_URL)
   return (await parseResponse<VideoTemplateCatalogue>(response)).data
+}
+
+interface BandLabPostResponse {
+  id: string
+  creator?: {
+    name?: string
+    username?: string
+  }
+  revision?: {
+    id: string
+    song?: {
+      name?: string
+      author?: {
+        name?: string
+        username?: string
+      }
+      picture?: {
+        url?: string
+      }
+    }
+  }
+}
+
+function isSupportedPreviewCoverUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === 'https:'
+      && /^\/v1\.(?:0|3)\/songs\/[0-9a-f-]+\/$/i.test(url.pathname)
+  } catch {
+    return false
+  }
+}
+
+export async function getCoverPreviewTrack(
+  trackUrl: string,
+  signal?: AbortSignal,
+): Promise<CoverPreviewTrackMetadata> {
+  const url = new URL(trackUrl)
+  const apiHost = url.hostname === 'test.bandlab.com'
+    ? 'api-test.bandlab.com'
+    : 'api.bandlab.com'
+  const postId = url.pathname.split('/').filter(Boolean)[1]
+  const expectedRevisionId = url.searchParams.get('revId')
+  const response = await fetch(`https://${apiHost}/v1.3/posts/${encodeURIComponent(postId)}`, {
+    cache: 'no-store',
+    signal,
+  })
+  const post = await parseResponse<BandLabPostResponse>(response)
+  const song = post.revision?.song
+  const pictureUrl = song?.picture?.url?.trim()
+  const artistName = song?.author?.name?.trim()
+    || post.creator?.name?.trim()
+    || song?.author?.username?.trim()
+    || post.creator?.username?.trim()
+
+  if (
+    post.id.toLowerCase() !== postId.toLowerCase()
+    || (expectedRevisionId && post.revision?.id.toLowerCase() !== expectedRevisionId.toLowerCase())
+    || !song?.name?.trim()
+    || !artistName
+    || !pictureUrl
+  ) {
+    throw new Error('The selected track metadata is incomplete or no longer matches its configured revision.')
+  }
+
+  return {
+    trackUrl,
+    name: song.name.trim(),
+    artistName,
+    artistUsername: song.author?.username?.trim() || post.creator?.username?.trim() || null,
+    pictureUrl,
+    previewSupported: isSupportedPreviewCoverUrl(pictureUrl),
+  }
+}
+
+export async function createCoverVideoPreview(
+  trackCoverUrl: string,
+  template: TrackVideoTemplate,
+  signal?: AbortSignal,
+): Promise<CoverVideoPreview> {
+  const response = await fetch(VIDEO_PREVIEWS_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ trackCoverUrl, template }),
+    cache: 'no-store',
+    signal,
+  })
+
+  return parseResponse<CoverVideoPreview>(response)
 }
 
 export async function getAiImageVisualStyles(): Promise<AiImageVisualStyle[]> {

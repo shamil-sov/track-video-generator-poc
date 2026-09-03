@@ -16,6 +16,11 @@ const router = createRouter({
       component: InsightsView,
     },
     {
+      path: '/video-previews',
+      name: 'cover-video-previews',
+      component: () => import('@/views/CoverVideoPreviewsView.vue'),
+    },
+    {
       path: '/ai-image-videos',
       name: 'ai-image-videos',
       component: () => import('@/views/AiImageVideosView.vue'),

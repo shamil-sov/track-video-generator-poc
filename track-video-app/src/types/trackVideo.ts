@@ -49,6 +49,30 @@ export interface CreateTrackVideoJobResult {
   triggeredAt: string
 }
 
+export interface CoverPreviewTrackMetadata {
+  trackUrl: string
+  name: string
+  artistName: string
+  artistUsername: string | null
+  pictureUrl: string
+  previewSupported: boolean
+}
+
+export interface CoverVideoPreview {
+  previewId: string
+  template: TrackVideoTemplate
+  status: 'completed'
+  triggeredAt: string
+  processingStartedAt: string
+  finishedAt: string
+  imageDownloadDurationMs: number
+  renderDurationMs: number
+  uploadDurationMs: number
+  processingDurationMs: number
+  totalDurationMs: number
+  videoUrl: string
+}
+
 export interface JobsPage {
   data: TrackVideoJob[]
   paging: {

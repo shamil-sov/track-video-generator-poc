@@ -18,7 +18,7 @@
         <nav class="app-nav" aria-label="Main navigation">
           <v-btn
             :to="{ name: 'home' }"
-            :variant="route.name === 'home' || route.name === 'insights' ? 'tonal' : 'text'"
+            :variant="isCoverRoute ? 'tonal' : 'text'"
             rounded="lg"
             prepend-icon="mdi-movie-open-outline"
             aria-label="Cover videos"
@@ -87,9 +87,15 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
+const isCoverRoute = computed(() => (
+  route.name === 'home'
+  || route.name === 'insights'
+  || route.name === 'cover-video-previews'
+))
 </script>
 
 <style scoped>
