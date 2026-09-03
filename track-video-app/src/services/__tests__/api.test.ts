@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   API_BASE_URL,
+  createJob,
   createAiGeneratedImageJob,
   createAiImageVideoJob,
   createCoverVideoPreview,
@@ -17,6 +18,29 @@ describe('API client', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+  })
+
+  it('creates a cover-video job without text-overlay data', async () => {
+    const result = {
+      jobId: 'job-id',
+      status: 'queued',
+      triggeredAt: '2026-09-03T08:00:00Z',
+    }
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(result), { status: 201 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(createJob('https://www.bandlab.com/track/track-id', 'orbit')).resolves.toEqual(result)
+    expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
+      `${API_BASE_URL}/track-video-generator/jobs`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trackUrl: 'https://www.bandlab.com/track/track-id',
+          template: 'orbit',
+        }),
+      },
+    )
   })
 
   it('shuffles every style example list returned by the catalogue', async () => {

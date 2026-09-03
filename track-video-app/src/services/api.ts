@@ -60,9 +60,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 export async function createJob(
   trackUrl: string,
   template: TrackVideoTemplate,
-  textOverlay?: string,
 ): Promise<CreateTrackVideoJobResult> {
-  const normalizedTextOverlay = textOverlay?.trim()
   const response = await fetch(JOBS_URL, {
     method: 'POST',
     headers: {
@@ -71,7 +69,6 @@ export async function createJob(
     body: JSON.stringify({
       trackUrl,
       template,
-      ...(normalizedTextOverlay ? { textOverlay: normalizedTextOverlay } : {}),
     }),
   })
 

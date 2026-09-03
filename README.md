@@ -4,7 +4,7 @@ A lightweight GitHub Pages client for the experimental BandLab Track Video Gener
 
 ## What it does
 
-- creates cover-based videos with server-provided motion templates and optional text overlays;
+- creates cover-based videos with server-provided motion templates;
 - renders fresh two-second cover previews while browsing templates, using a configured list of BandLab tracks;
 - creates AI-image videos by combining a server-provided visual style with a server-provided motion template;
 - previews visual styles not currently included in video generation in a separate, read-only tab, for possible inclusion after review;
