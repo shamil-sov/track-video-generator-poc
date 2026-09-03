@@ -159,6 +159,8 @@ describe('API client', () => {
     const result = {
       previewId: 'preview-id',
       template: 'orbit',
+      resolution: '720x1280',
+      frameRate: 24,
       status: 'completed',
       triggeredAt: '2026-09-02T08:00:00Z',
       processingStartedAt: '2026-09-02T08:00:00.015Z',
@@ -176,6 +178,7 @@ describe('API client', () => {
     await expect(createCoverVideoPreview(
       'https://bl-prod-images.azureedge.net/v1.3/songs/cover-id/',
       'orbit',
+      { resolution: '720x1280', frameRate: 24 },
     )).resolves.toEqual(result)
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
       `${API_BASE_URL}/track-video-generator/video-previews`,
@@ -185,6 +188,8 @@ describe('API client', () => {
         body: JSON.stringify({
           trackCoverUrl: 'https://bl-prod-images.azureedge.net/v1.3/songs/cover-id/',
           template: 'orbit',
+          resolution: '720x1280',
+          frameRate: 24,
         }),
         cache: 'no-store',
         signal: undefined,

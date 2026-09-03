@@ -14,6 +14,8 @@ const templates = [
 const preview = {
   previewId: 'preview-id',
   template: 'orbit',
+  resolution: '360x640' as const,
+  frameRate: 12 as const,
   status: 'completed' as const,
   triggeredAt: '2026-09-02T08:00:00Z',
   processingStartedAt: '2026-09-02T08:00:00.015Z',

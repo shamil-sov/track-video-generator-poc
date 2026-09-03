@@ -78,6 +78,8 @@ function preview(template: string, videoUrl: string): CoverVideoPreview {
   return {
     previewId: `${template}-preview`,
     template,
+    resolution: '360x640',
+    frameRate: 12,
     status: 'completed',
     triggeredAt: '2026-09-02T08:00:00Z',
     processingStartedAt: '2026-09-02T08:00:00.015Z',
@@ -148,7 +150,12 @@ describe('Cover video previews', () => {
     expect(wrapper.get('.selected-track h2').text()).toBe('2 Of Amerikaz Most Wanted')
     expect(wrapper.get('.selected-track p').text()).toContain('Gordon')
     expect(wrapper.get('.selected-track img').attributes('src')).toBe(track.pictureUrl)
-    expect(createCoverVideoPreview).toHaveBeenCalledWith(track.pictureUrl, 'orbit', expect.any(AbortSignal))
+    expect(createCoverVideoPreview).toHaveBeenCalledWith(
+      track.pictureUrl,
+      'orbit',
+      { resolution: '360x640', frameRate: 12 },
+      expect.any(AbortSignal),
+    )
     expect(wrapper.get('.carousel-stub').attributes('data-preview-url')).toBe('orbit-generated.mp4')
     expect(wrapper.get('.carousel-stub').attributes('data-template-ids')).toBe('orbit,music-visualizer')
     expect(templates.value.map(template => template.id)).toEqual([
@@ -157,6 +164,33 @@ describe('Cover video previews', () => {
       '3d-style',
       'music-visualizer',
     ])
+  })
+
+  it('generates a fresh preview when resolution or frame rate changes', async () => {
+    const wrapper = mountView()
+    await wrapper.findAll('.track-option')[1].trigger('click')
+    await flushPromises()
+
+    await wrapper.get('.config-option[data-value="720x1280"]').trigger('click')
+    await flushPromises()
+    expect(createCoverVideoPreview).toHaveBeenLastCalledWith(
+      track.pictureUrl,
+      'orbit',
+      { resolution: '720x1280', frameRate: 12 },
+      expect.any(AbortSignal),
+    )
+
+    await wrapper.get('.config-option[data-value="24"]').trigger('click')
+    await flushPromises()
+    expect(createCoverVideoPreview).toHaveBeenLastCalledWith(
+      track.pictureUrl,
+      'orbit',
+      { resolution: '720x1280', frameRate: 24 },
+      expect.any(AbortSignal),
+    )
+    expect(createCoverVideoPreview).toHaveBeenCalledTimes(3)
+    expect(wrapper.get('.config-option[data-value="720x1280"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.config-option[data-value="24"]').attributes('aria-pressed')).toBe('true')
   })
 
   it('requests a fresh preview on every template click, including repeat selections', async () => {

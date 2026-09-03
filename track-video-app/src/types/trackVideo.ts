@@ -1,5 +1,12 @@
 export type TrackVideoTemplate = string
 export type TrackVideoJobStatus = 'queued' | 'processing' | 'completed' | 'failed'
+export type CoverVideoPreviewResolution = '360x640' | '720x1280'
+export type CoverVideoPreviewFrameRate = 12 | 24
+
+export interface CoverVideoPreviewRenderOptions {
+  resolution: CoverVideoPreviewResolution
+  frameRate: CoverVideoPreviewFrameRate
+}
 
 export interface VideoTemplateCatalogueItem {
   id: TrackVideoTemplate
@@ -61,6 +68,8 @@ export interface CoverPreviewTrackMetadata {
 export interface CoverVideoPreview {
   previewId: string
   template: TrackVideoTemplate
+  resolution: CoverVideoPreviewResolution
+  frameRate: CoverVideoPreviewFrameRate
   status: 'completed'
   triggeredAt: string
   processingStartedAt: string

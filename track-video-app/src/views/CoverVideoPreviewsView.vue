@@ -10,7 +10,7 @@
           <p>Select a track, then browse two-second template previews generated from its cover.</p>
         </div>
         <v-chip size="small" variant="tonal" prepend-icon="mdi-volume-off">
-          Silent · 360 × 640
+          Silent · {{ selectedResolution.replace('x', ' × ') }} · {{ selectedFrameRate }} FPS
         </v-chip>
       </header>
 
@@ -88,17 +88,83 @@
             <v-btn size="small" variant="text" @click="retryTemplates">Retry</v-btn>
           </template>
         </v-alert>
-        <CoverPreviewTemplateCarousel
-          v-else
-          :templates="previewTemplates"
-          :selected-template-id="selectedTemplate"
-          :track-name="track.name"
-          :cover-url="track.pictureUrl"
-          :preview="preview"
-          :loading="previewLoading"
-          :error="previewError"
-          @select="renderTemplatePreview"
-        />
+        <div v-else class="preview-workspace">
+          <CoverPreviewTemplateCarousel
+            :templates="previewTemplates"
+            :selected-template-id="selectedTemplate"
+            :track-name="track.name"
+            :cover-url="track.pictureUrl"
+            :preview="preview"
+            :loading="previewLoading"
+            :error="previewError"
+            @select="renderTemplatePreview"
+          />
+
+          <aside class="preview-config" aria-labelledby="preview-config-heading">
+            <div class="preview-config__heading">
+              <span>Preview config</span>
+              <h2 id="preview-config-heading">Render settings</h2>
+              <p>Changing a setting generates a fresh preview.</p>
+            </div>
+
+            <fieldset>
+              <legend>Resolution</legend>
+              <button
+                type="button"
+                class="config-option"
+                data-value="360x640"
+                :class="{ 'config-option--selected': selectedResolution === '360x640' }"
+                :aria-pressed="selectedResolution === '360x640'"
+                @click="setPreviewResolution('360x640')"
+              >
+                <span>Standard</span>
+                <small>360 × 640</small>
+              </button>
+              <button
+                type="button"
+                class="config-option"
+                data-value="720x1280"
+                :class="{ 'config-option--selected': selectedResolution === '720x1280' }"
+                :aria-pressed="selectedResolution === '720x1280'"
+                @click="setPreviewResolution('720x1280')"
+              >
+                <span>High</span>
+                <small>720 × 1280</small>
+              </button>
+            </fieldset>
+
+            <fieldset>
+              <legend>Frame rate</legend>
+              <button
+                type="button"
+                class="config-option"
+                data-value="12"
+                :class="{ 'config-option--selected': selectedFrameRate === 12 }"
+                :aria-pressed="selectedFrameRate === 12"
+                @click="setPreviewFrameRate(12)"
+              >
+                <span>12 FPS</span>
+                <small>Faster render</small>
+              </button>
+              <button
+                type="button"
+                class="config-option"
+                data-value="24"
+                :class="{ 'config-option--selected': selectedFrameRate === 24 }"
+                :aria-pressed="selectedFrameRate === 24"
+                @click="setPreviewFrameRate(24)"
+              >
+                <span>24 FPS</span>
+                <small>Smoother motion</small>
+              </button>
+            </fieldset>
+
+            <div class="preview-config__summary">
+              <v-icon icon="mdi-timer-outline" size="17" />
+              Two seconds · Silent
+            </div>
+          </aside>
+        </div>
       </v-card>
     </v-container>
   </main>
@@ -114,6 +180,8 @@ import { createCoverVideoPreview, getCoverPreviewTrack } from '@/services/api'
 import type {
   CoverPreviewTrackMetadata,
   CoverVideoPreview,
+  CoverVideoPreviewFrameRate,
+  CoverVideoPreviewResolution,
   TrackVideoTemplate,
 } from '@/types/trackVideo'
 
@@ -126,6 +194,8 @@ const selectedTemplate = ref<TrackVideoTemplate>('')
 const preview = ref<CoverVideoPreview | null>(null)
 const previewLoading = ref(false)
 const previewError = ref<string | null>(null)
+const selectedResolution = ref<CoverVideoPreviewResolution>('360x640')
+const selectedFrameRate = ref<CoverVideoPreviewFrameRate>(12)
 const excludedPreviewTemplateIds = new Set<TrackVideoTemplate>(['prism-spectrum', '3d-style'])
 
 const {
@@ -174,6 +244,10 @@ async function renderTemplatePreview(templateId: TrackVideoTemplate): Promise<vo
     const result = await createCoverVideoPreview(
       track.value.pictureUrl,
       templateId,
+      {
+        resolution: selectedResolution.value,
+        frameRate: selectedFrameRate.value,
+      },
       previewController.signal,
     )
     if (requestSequence === previewRequestSequence) {
@@ -188,6 +262,28 @@ async function renderTemplatePreview(templateId: TrackVideoTemplate): Promise<vo
       previewLoading.value = false
       previewController = null
     }
+  }
+}
+
+function setPreviewResolution(resolution: CoverVideoPreviewResolution): void {
+  if (selectedResolution.value === resolution) {
+    return
+  }
+
+  selectedResolution.value = resolution
+  if (selectedTemplate.value) {
+    void renderTemplatePreview(selectedTemplate.value)
+  }
+}
+
+function setPreviewFrameRate(frameRate: CoverVideoPreviewFrameRate): void {
+  if (selectedFrameRate.value === frameRate) {
+    return
+  }
+
+  selectedFrameRate.value = frameRate
+  if (selectedTemplate.value) {
+    void renderTemplatePreview(selectedTemplate.value)
   }
 }
 
@@ -393,6 +489,107 @@ onBeforeUnmount(() => {
   margin: 0 auto;
 }
 
+.preview-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: clamp(24px, 4vw, 46px);
+  align-items: start;
+}
+
+.preview-config {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  background: rgba(var(--v-theme-on-surface), 0.035);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.09);
+  border-radius: 16px;
+}
+
+.preview-config__heading > span {
+  color: rgb(var(--v-theme-primary));
+  font-size: 0.63rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.preview-config__heading h2 {
+  margin: 4px 0 7px;
+  font-size: 1.1rem;
+  letter-spacing: -0.035em;
+}
+
+.preview-config__heading p {
+  margin: 0;
+  color: rgba(var(--v-theme-on-surface), 0.5);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.preview-config fieldset {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.preview-config legend {
+  margin-bottom: 8px;
+  color: rgba(var(--v-theme-on-surface), 0.72);
+  font-size: 0.7rem;
+  font-weight: 760;
+}
+
+.config-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 11px 12px;
+  color: rgba(var(--v-theme-on-surface), 0.68);
+  text-align: left;
+  background: rgba(var(--v-theme-surface), 0.56);
+  border: 1px solid rgba(var(--v-theme-on-surface), 0.1);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 150ms ease;
+}
+
+.config-option:hover,
+.config-option:focus-visible {
+  border-color: rgba(var(--v-theme-on-surface), 0.32);
+  outline: none;
+}
+
+.config-option--selected {
+  color: rgb(var(--v-theme-on-surface));
+  background: rgba(var(--v-theme-primary), 0.1);
+  border-color: rgb(var(--v-theme-primary));
+  box-shadow: 0 0 0 2px rgba(var(--v-theme-primary), 0.12);
+}
+
+.config-option span {
+  font-size: 0.72rem;
+  font-weight: 760;
+}
+
+.config-option small {
+  color: rgba(var(--v-theme-on-surface), 0.44);
+  font-size: 0.64rem;
+}
+
+.preview-config__summary {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  padding-top: 2px;
+  color: rgba(var(--v-theme-on-surface), 0.48);
+  font-size: 0.67rem;
+}
+
 .unsupported-alert code {
   padding: 2px 5px;
   font-size: 0.75rem;
@@ -418,6 +615,28 @@ onBeforeUnmount(() => {
 
   .selected-track img {
     width: 82px;
+  }
+}
+
+@media (max-width: 900px) {
+  .preview-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .preview-config {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .preview-config__heading,
+  .preview-config__summary {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .preview-config {
+    display: flex;
   }
 }
 </style>

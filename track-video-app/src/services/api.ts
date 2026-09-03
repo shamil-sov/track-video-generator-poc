@@ -2,6 +2,7 @@ import type {
   ApiError,
   CoverPreviewTrackMetadata,
   CoverVideoPreview,
+  CoverVideoPreviewRenderOptions,
   CreateTrackVideoJobResult,
   JobsPage,
   TrackVideoJob,
@@ -177,6 +178,7 @@ export async function getCoverPreviewTrack(
 export async function createCoverVideoPreview(
   trackCoverUrl: string,
   template: TrackVideoTemplate,
+  options: CoverVideoPreviewRenderOptions,
   signal?: AbortSignal,
 ): Promise<CoverVideoPreview> {
   const response = await fetch(VIDEO_PREVIEWS_URL, {
@@ -184,7 +186,7 @@ export async function createCoverVideoPreview(
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ trackCoverUrl, template }),
+    body: JSON.stringify({ trackCoverUrl, template, ...options }),
     cache: 'no-store',
     signal,
   })
