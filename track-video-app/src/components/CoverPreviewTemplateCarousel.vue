@@ -26,7 +26,6 @@
           v-if="props.preview && !props.loading"
           :key="props.preview.videoUrl"
           :src="props.preview.videoUrl"
-          :poster="props.coverUrl"
           :aria-label="`${selectedTemplate?.name || 'Template'} preview using ${props.trackName}`"
           autoplay
           controls

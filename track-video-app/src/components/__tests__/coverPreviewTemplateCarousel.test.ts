@@ -59,7 +59,7 @@ describe('Cover preview template carousel', () => {
     expect(generated.loop).toBe(true)
     expect(generated.muted).toBe(true)
     expect(generated.controls).toBe(true)
-    expect(generated.getAttribute('poster')).toBe('cover.jpg')
+    expect(generated.hasAttribute('poster')).toBe(false)
     expect(wrapper.get('.render-time').text()).toBe('Preview generated in 1.3 s')
     for (const example of wrapper.findAll('.template-option video')) {
       expect((example.element as HTMLVideoElement).autoplay).toBe(false)
