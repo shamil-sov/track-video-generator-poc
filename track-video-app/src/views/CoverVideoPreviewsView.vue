@@ -82,7 +82,7 @@
         <div v-if="templatesLoading" class="templates-loading" aria-label="Loading video templates">
           <v-skeleton-loader type="image, article" />
         </div>
-        <v-alert v-else-if="templateError || !videoTemplates.length" type="warning" variant="tonal">
+        <v-alert v-else-if="templateError || !previewTemplates.length" type="warning" variant="tonal">
           {{ templateError || 'No video templates are currently available.' }}
           <template #append>
             <v-btn size="small" variant="text" @click="retryTemplates">Retry</v-btn>
@@ -90,7 +90,7 @@
         </v-alert>
         <CoverPreviewTemplateCarousel
           v-else
-          :templates="videoTemplates"
+          :templates="previewTemplates"
           :selected-template-id="selectedTemplate"
           :track-name="track.name"
           :cover-url="track.pictureUrl"
@@ -105,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CoverPreviewTemplateCarousel from '@/components/CoverPreviewTemplateCarousel.vue'
 import CoverSectionNav from '@/components/CoverSectionNav.vue'
 import { useVideoTemplates } from '@/composables/useVideoTemplates'
@@ -126,6 +126,7 @@ const selectedTemplate = ref<TrackVideoTemplate>('')
 const preview = ref<CoverVideoPreview | null>(null)
 const previewLoading = ref(false)
 const previewError = ref<string | null>(null)
+const excludedPreviewTemplateIds = new Set<TrackVideoTemplate>(['prism-spectrum', '3d-style'])
 
 const {
   templates: videoTemplates,
@@ -133,6 +134,10 @@ const {
   error: templateError,
   loadTemplates,
 } = useVideoTemplates()
+
+const previewTemplates = computed(() => (
+  videoTemplates.value.filter(template => !excludedPreviewTemplateIds.has(template.id))
+))
 
 let trackRequestSequence = 0
 let previewRequestSequence = 0
@@ -189,15 +194,15 @@ async function renderTemplatePreview(templateId: TrackVideoTemplate): Promise<vo
 async function startInitialPreview(): Promise<void> {
   if (
     !track.value?.previewSupported
-    || !videoTemplates.value.length
+    || !previewTemplates.value.length
     || previewLoading.value
     || preview.value
   ) {
     return
   }
 
-  if (!videoTemplates.value.some(template => template.id === selectedTemplate.value)) {
-    selectedTemplate.value = videoTemplates.value[0].id
+  if (!previewTemplates.value.some(template => template.id === selectedTemplate.value)) {
+    selectedTemplate.value = previewTemplates.value[0].id
   }
   await renderTemplatePreview(selectedTemplate.value)
 }

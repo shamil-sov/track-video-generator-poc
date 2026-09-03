@@ -35,8 +35,6 @@
           playsinline
         ></video>
         <div v-else class="preview-placeholder">
-          <img :src="props.coverUrl" :alt="`${props.trackName} cover`" />
-          <span class="preview-placeholder__shade"></span>
           <div class="preview-placeholder__status">
             <v-progress-circular v-if="props.loading" indeterminate color="primary" size="34" />
             <v-icon v-else icon="mdi-video-outline" size="34" />
@@ -219,27 +217,21 @@ function selectAdjacentFrom(templateId: string, offset: number): void {
 }
 
 .preview-media video,
-.preview-placeholder,
-.preview-placeholder img {
+.preview-placeholder {
   width: 100%;
   height: 100%;
 }
 
-.preview-media video,
-.preview-placeholder img {
+.preview-media video {
   display: block;
   object-fit: cover;
 }
 
 .preview-placeholder {
   position: relative;
-}
-
-.preview-placeholder__shade {
-  position: absolute;
-  inset: 0;
-  background: rgba(8, 9, 12, 0.7);
-  backdrop-filter: blur(8px);
+  background:
+    radial-gradient(circle at 50% 42%, rgba(var(--v-theme-primary), 0.1), transparent 42%),
+    #0d0e12;
 }
 
 .preview-placeholder__status {

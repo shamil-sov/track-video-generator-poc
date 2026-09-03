@@ -20,7 +20,9 @@ vi.mock('@/services/api', () => ({
 
 const templates = ref([
   { id: 'orbit', name: 'Sonic Halo', exampleVideoUrls: ['orbit.mp4'] },
-  { id: 'prism', name: 'Prism', exampleVideoUrls: ['prism.mp4'] },
+  { id: 'prism-spectrum', name: 'Prism Spectrum', exampleVideoUrls: ['prism.mp4'] },
+  { id: '3d-style', name: 'Silk Current', exampleVideoUrls: ['silk.mp4'] },
+  { id: 'music-visualizer', name: 'Chromatic Waves', exampleVideoUrls: ['waves.mp4'] },
 ])
 const templatesLoading = ref(false)
 const templateError = ref<string | null>(null)
@@ -45,11 +47,12 @@ const autocompleteStub = defineComponent({
   `,
 })
 const carouselStub = defineComponent({
-  props: ['selectedTemplateId', 'trackName', 'coverUrl', 'preview', 'loading', 'error'],
+  props: ['templates', 'selectedTemplateId', 'trackName', 'coverUrl', 'preview', 'loading', 'error'],
   emits: ['select'],
   template: `
     <div class="carousel-stub"
       :data-template="selectedTemplateId"
+      :data-template-ids="templates.map(template => template.id).join(',')"
       :data-track="trackName"
       :data-cover="coverUrl"
       :data-preview-url="preview?.videoUrl || ''"
@@ -57,7 +60,7 @@ const carouselStub = defineComponent({
       :data-error="error || ''"
     >
       <button class="select-orbit" @click="$emit('select', 'orbit')">Orbit</button>
-      <button class="select-prism" @click="$emit('select', 'prism')">Prism</button>
+      <button class="select-waves" @click="$emit('select', 'music-visualizer')">Waves</button>
     </div>
   `,
 })
@@ -114,7 +117,9 @@ describe('Cover video previews', () => {
     vi.clearAllMocks()
     templates.value = [
       { id: 'orbit', name: 'Sonic Halo', exampleVideoUrls: ['orbit.mp4'] },
-      { id: 'prism', name: 'Prism', exampleVideoUrls: ['prism.mp4'] },
+      { id: 'prism-spectrum', name: 'Prism Spectrum', exampleVideoUrls: ['prism.mp4'] },
+      { id: '3d-style', name: 'Silk Current', exampleVideoUrls: ['silk.mp4'] },
+      { id: 'music-visualizer', name: 'Chromatic Waves', exampleVideoUrls: ['waves.mp4'] },
     ]
     templatesLoading.value = false
     templateError.value = null
@@ -145,6 +150,13 @@ describe('Cover video previews', () => {
     expect(wrapper.get('.selected-track img').attributes('src')).toBe(track.pictureUrl)
     expect(createCoverVideoPreview).toHaveBeenCalledWith(track.pictureUrl, 'orbit', expect.any(AbortSignal))
     expect(wrapper.get('.carousel-stub').attributes('data-preview-url')).toBe('orbit-generated.mp4')
+    expect(wrapper.get('.carousel-stub').attributes('data-template-ids')).toBe('orbit,music-visualizer')
+    expect(templates.value.map(template => template.id)).toEqual([
+      'orbit',
+      'prism-spectrum',
+      '3d-style',
+      'music-visualizer',
+    ])
   })
 
   it('requests a fresh preview on every template click, including repeat selections', async () => {
@@ -174,17 +186,17 @@ describe('Cover video previews', () => {
       .mockImplementationOnce(() => new Promise(resolve => {
         resolveOldPreview = resolve
       }))
-      .mockResolvedValueOnce(preview('prism', 'prism-current.mp4'))
+      .mockResolvedValueOnce(preview('music-visualizer', 'waves-current.mp4'))
 
     await wrapper.get('.select-orbit').trigger('click')
-    await wrapper.get('.select-prism').trigger('click')
+    await wrapper.get('.select-waves').trigger('click')
     await flushPromises()
-    expect(wrapper.get('.carousel-stub').attributes('data-preview-url')).toBe('prism-current.mp4')
+    expect(wrapper.get('.carousel-stub').attributes('data-preview-url')).toBe('waves-current.mp4')
 
     resolveOldPreview(preview('orbit', 'orbit-stale.mp4'))
     await flushPromises()
-    expect(wrapper.get('.carousel-stub').attributes('data-template')).toBe('prism')
-    expect(wrapper.get('.carousel-stub').attributes('data-preview-url')).toBe('prism-current.mp4')
+    expect(wrapper.get('.carousel-stub').attributes('data-template')).toBe('music-visualizer')
+    expect(wrapper.get('.carousel-stub').attributes('data-preview-url')).toBe('waves-current.mp4')
   })
 
   it('shows metadata but does not call the preview API for a profile-picture track', async () => {

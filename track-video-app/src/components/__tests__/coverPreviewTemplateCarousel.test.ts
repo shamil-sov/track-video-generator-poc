@@ -59,6 +59,7 @@ describe('Cover preview template carousel', () => {
     expect(generated.loop).toBe(true)
     expect(generated.muted).toBe(true)
     expect(generated.controls).toBe(true)
+    expect(generated.getAttribute('poster')).toBe('cover.jpg')
     expect(wrapper.get('.render-time').text()).toBe('Preview generated in 1.3 s')
     for (const example of wrapper.findAll('.template-option video')) {
       expect((example.element as HTMLVideoElement).autoplay).toBe(false)
@@ -85,11 +86,12 @@ describe('Cover preview template carousel', () => {
     expect(wrapper.emitted('select')).toEqual([['silk'], ['prism'], ['silk']])
   })
 
-  it('shows the track cover while a new preview is rendering and reports failures', () => {
+  it('uses a neutral loading state without the track cover and reports failures', () => {
     const wrapper = mountCarousel({ preview: null, loading: true, error: 'Preview rendering failed.' })
 
     expect(wrapper.find('.preview-media video').exists()).toBe(false)
-    expect(wrapper.get('.preview-placeholder img').attributes('src')).toBe('cover.jpg')
+    expect(wrapper.find('.preview-placeholder img').exists()).toBe(false)
+    expect(wrapper.find('.preview-placeholder__shade').exists()).toBe(false)
     expect(wrapper.get('.preview-placeholder__status').text()).toContain('Generating preview')
     expect(wrapper.get('[role="alert"]').text()).toContain('Preview rendering failed.')
   })
