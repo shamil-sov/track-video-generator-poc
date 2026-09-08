@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   API_BASE_URL,
   createJob,
+  createCoverCombinedPreviewBatch,
   createCoverImagePreviewBatch,
   createCoverVideoPreviewBatch,
   createAiGeneratedImageJob,
@@ -225,19 +226,29 @@ describe('API client', () => {
     )
   })
 
-  it('requests fresh video and image preview batches with only the cover URL', async () => {
-    const result = {
+  it('requests fresh video, image, and combined preview batches with only the cover URL', async () => {
+    const previewResult = {
       data: [{ template: 'orbit', previewUrl: 'https://cdn.example/orbit.mp4' }],
       totalDurationMs: 1250,
     }
-    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(
-      new Response(JSON.stringify(result), { status: 201 }),
-    ))
+    const combinedResult = {
+      data: [{
+        template: 'orbit',
+        videoUrl: 'https://cdn.example/orbit.mp4',
+        thumbnailUrl: 'https://cdn.example/orbit.jpg',
+      }],
+      totalDurationMs: 1340,
+    }
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify(previewResult), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(previewResult), { status: 201 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify(combinedResult), { status: 201 }))
     vi.stubGlobal('fetch', fetchMock)
     const coverUrl = 'https://bl-prod-images.azureedge.net/v1.3/songs/cover-id/'
 
-    await expect(createCoverVideoPreviewBatch(coverUrl)).resolves.toEqual(result)
-    await expect(createCoverImagePreviewBatch(coverUrl)).resolves.toEqual(result)
+    await expect(createCoverVideoPreviewBatch(coverUrl)).resolves.toEqual(previewResult)
+    await expect(createCoverImagePreviewBatch(coverUrl)).resolves.toEqual(previewResult)
+    await expect(createCoverCombinedPreviewBatch(coverUrl)).resolves.toEqual(combinedResult)
 
     expect(fetchMock.mock.calls).toEqual([
       [
@@ -252,6 +263,16 @@ describe('API client', () => {
       ],
       [
         `${API_BASE_URL}/track-video-generator/prototype/image-preview-batches`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trackCoverUrl: coverUrl }),
+          cache: 'no-store',
+          signal: undefined,
+        },
+      ],
+      [
+        `${API_BASE_URL}/track-video-generator/prototype/combined-preview-batches`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

@@ -82,7 +82,7 @@ export interface CoverVideoPreview {
   videoUrl: string
 }
 
-export type CoverPreviewBatchKind = 'video' | 'image'
+export type CoverPreviewBatchKind = 'video' | 'image' | 'combined'
 
 export interface CoverPreviewBatchItem {
   template: TrackVideoTemplate
@@ -91,6 +91,17 @@ export interface CoverPreviewBatchItem {
 
 export interface CoverPreviewBatchResult {
   data: CoverPreviewBatchItem[]
+  totalDurationMs: number
+}
+
+export interface CoverCombinedPreviewBatchItem {
+  template: TrackVideoTemplate
+  videoUrl: string
+  thumbnailUrl: string
+}
+
+export interface CoverCombinedPreviewBatchResult {
+  data: CoverCombinedPreviewBatchItem[]
   totalDurationMs: number
 }
 

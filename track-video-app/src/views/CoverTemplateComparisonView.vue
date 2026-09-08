@@ -9,7 +9,7 @@
           <h1>Compare templates</h1>
           <p>Generate all five supported templates from one cover and compare them together.</p>
         </div>
-        <v-chip size="small" variant="tonal" :prepend-icon="previewKind === 'video' ? 'mdi-motion-play' : 'mdi-image-outline'">
+        <v-chip size="small" variant="tonal" :prepend-icon="capabilityIcon">
           {{ capabilityLabel }}
         </v-chip>
       </header>
@@ -95,6 +95,18 @@
                 <span>Images</span>
                 <small>Five JPEGs</small>
               </button>
+              <button
+                type="button"
+                class="preview-kind__option"
+                data-type="combined"
+                :class="{ 'preview-kind__option--selected': previewKind === 'combined' }"
+                :aria-pressed="previewKind === 'combined'"
+                @click="setPreviewKind('combined')"
+              >
+                <v-icon icon="mdi-view-comfy-outline" size="19" />
+                <span>Combined</span>
+                <small>Five MP4 + JPEG pairs</small>
+              </button>
             </div>
           </fieldset>
 
@@ -108,7 +120,7 @@
             :disabled="!track?.previewSupported || batchLoading"
             @click="generateBatch"
           >
-            Generate 5 previews
+            {{ generateButtonLabel }}
           </v-btn>
         </div>
       </v-card>
@@ -129,13 +141,13 @@
           <div>
             <div class="section-kicker">Fresh comparison</div>
             <h2 id="comparison-results-heading">
-              {{ batchLoading ? 'Generating all five previews…' : `${orderedPreviews.length} previews generated` }}
+              {{ batchLoading ? loadingHeading : resultHeading }}
             </h2>
             <p v-if="batchResult">Completed in {{ formatDuration(batchResult.totalDurationMs) }}</p>
             <p v-else>The cover is downloaded once and all templates render concurrently.</p>
           </div>
           <v-btn
-            v-if="previewKind === 'video' && batchResult"
+            v-if="hasVideos && batchResult"
             variant="tonal"
             size="small"
             :prepend-icon="videosPlaying ? 'mdi-pause' : 'mdi-play'"
@@ -147,7 +159,7 @@
         </div>
 
         <div class="preview-grid-wrap">
-          <div class="preview-grid">
+          <div class="preview-grid" :class="{ 'preview-grid--combined': previewKind === 'combined' }">
             <article v-for="index in (batchLoading ? 5 : 0)" :key="`loading-${index}`" class="preview-card preview-card--loading">
               <div class="preview-placeholder">
                 <v-progress-circular indeterminate color="primary" size="28" />
@@ -161,27 +173,52 @@
               v-for="item in orderedPreviews"
               :key="item.template"
               class="preview-card"
+              :class="{ 'preview-card--combined': previewKind === 'combined' }"
             >
-              <button class="preview-card__media" type="button" :aria-label="`Open ${templateName(item.template)} preview`" @click="openPreview(item)">
-                <video
-                  v-if="previewKind === 'video'"
-                  ref="previewVideos"
-                  :src="item.previewUrl"
-                  muted
-                  loop
-                  playsinline
-                  preload="auto"
-                  @loadeddata="markVideoReady(item.previewUrl)"
-                ></video>
-                <img v-else :src="item.previewUrl" :alt="`${templateName(item.template)} preview`" />
-                <span class="preview-card__expand"><v-icon icon="mdi-arrow-expand" size="18" /></span>
-              </button>
+              <div class="preview-card__media-set">
+                <button
+                  v-if="item.videoUrl"
+                  class="preview-card__media"
+                  type="button"
+                  :aria-label="`Open ${templateName(item.template)} motion preview`"
+                  @click="openPreview(item, 'video')"
+                >
+                  <video
+                    ref="previewVideos"
+                    :src="item.videoUrl"
+                    muted
+                    loop
+                    playsinline
+                    preload="auto"
+                    @loadeddata="markVideoReady(item.videoUrl)"
+                  ></video>
+                  <span v-if="previewKind === 'combined'" class="preview-card__asset-label">Motion</span>
+                  <span class="preview-card__expand"><v-icon icon="mdi-arrow-expand" size="18" /></span>
+                </button>
+                <button
+                  v-if="item.thumbnailUrl"
+                  class="preview-card__media"
+                  type="button"
+                  :aria-label="`Open ${templateName(item.template)} thumbnail preview`"
+                  @click="openPreview(item, 'image')"
+                >
+                  <img :src="item.thumbnailUrl" :alt="`${templateName(item.template)} thumbnail preview`" />
+                  <span v-if="previewKind === 'combined'" class="preview-card__asset-label">Thumbnail</span>
+                  <span class="preview-card__expand"><v-icon icon="mdi-arrow-expand" size="18" /></span>
+                </button>
+              </div>
               <div class="preview-card__copy">
                 <strong>{{ templateName(item.template) }}</strong>
-                <a :href="item.previewUrl" target="_blank" rel="noopener" @click.stop>
-                  Open file
-                  <v-icon icon="mdi-open-in-new" size="13" />
-                </a>
+                <span class="preview-card__links">
+                  <a v-if="item.videoUrl" :href="item.videoUrl" target="_blank" rel="noopener" @click.stop>
+                    Video
+                    <v-icon icon="mdi-open-in-new" size="13" />
+                  </a>
+                  <a v-if="item.thumbnailUrl" :href="item.thumbnailUrl" target="_blank" rel="noopener" @click.stop>
+                    {{ previewKind === 'combined' ? 'Thumbnail' : 'Image' }}
+                    <v-icon icon="mdi-open-in-new" size="13" />
+                  </a>
+                </span>
               </div>
             </article>
           </div>
@@ -193,21 +230,25 @@
       <v-card v-if="selectedPreview" class="preview-dialog" rounded="xl">
         <div class="preview-dialog__heading">
           <div>
-            <span>{{ previewKind === 'video' ? 'Motion preview' : 'Image preview' }}</span>
+            <span>
+              {{ selectedPreview.mediaKind === 'video'
+                ? 'Motion preview'
+                : previewKind === 'combined' ? 'Thumbnail preview' : 'Image preview' }}
+            </span>
             <h2>{{ templateName(selectedPreview.template) }}</h2>
           </div>
           <v-btn icon="mdi-close" variant="text" aria-label="Close preview" @click="previewDialogOpen = false" />
         </div>
         <video
-          v-if="previewKind === 'video'"
-          :src="selectedPreview.previewUrl"
+          v-if="selectedPreview.mediaKind === 'video'"
+          :src="selectedPreview.url"
           autoplay
           controls
           loop
           muted
           playsinline
         ></video>
-        <img v-else :src="selectedPreview.previewUrl" :alt="`${templateName(selectedPreview.template)} preview`" />
+        <img v-else :src="selectedPreview.url" :alt="`${templateName(selectedPreview.template)} thumbnail preview`" />
       </v-card>
     </v-dialog>
   </main>
@@ -219,12 +260,13 @@ import CoverSectionNav from '@/components/CoverSectionNav.vue'
 import { useVideoTemplates } from '@/composables/useVideoTemplates'
 import { COVER_PREVIEW_TRACK_URLS } from '@/data/coverPreviewTracks'
 import {
+  createCoverCombinedPreviewBatch,
   createCoverImagePreviewBatch,
   createCoverVideoPreviewBatch,
   getCoverPreviewTrack,
 } from '@/services/api'
 import type {
-  CoverPreviewBatchItem,
+  CoverCombinedPreviewBatchResult,
   CoverPreviewBatchKind,
   CoverPreviewBatchResult,
   CoverPreviewTrackMetadata,
@@ -247,14 +289,18 @@ const track = ref<CoverPreviewTrackMetadata | null>(null)
 const trackLoading = ref(false)
 const trackError = ref<string | null>(null)
 const previewKind = ref<CoverPreviewBatchKind>('video')
-const batchResult = ref<CoverPreviewBatchResult | null>(null)
+const batchResult = ref<CoverPreviewBatchResult | CoverCombinedPreviewBatchResult | null>(null)
 const batchLoading = ref(false)
 const batchError = ref<string | null>(null)
 const previewVideos = ref<HTMLVideoElement[]>([])
 const readyVideoUrls = new Set<string>()
 const videosReady = ref(false)
 const videosPlaying = ref(false)
-const selectedPreview = ref<CoverPreviewBatchItem | null>(null)
+const selectedPreview = ref<{
+  template: TrackVideoTemplate
+  mediaKind: 'video' | 'image'
+  url: string
+} | null>(null)
 const previewDialogOpen = ref(false)
 
 let trackRequestSequence = 0
@@ -262,21 +308,60 @@ let batchRequestSequence = 0
 let trackController: AbortController | null = null
 let batchController: AbortController | null = null
 
-const capabilityLabel = computed(() => previewKind.value === 'video'
-  ? '5 templates · 360 × 640 · 2 seconds · Silent'
-  : '5 templates · 360 × 640 · JPEG')
-
+const capabilityLabel = computed(() => {
+  if (previewKind.value === 'video') {
+    return '5 templates · 360 × 640 · 2 seconds · Silent'
+  }
+  if (previewKind.value === 'image') {
+    return '5 templates · 360 × 640 · JPEG'
+  }
+  return '5 templates · MP4 + JPEG · 360 × 640'
+})
+const capabilityIcon = computed(() => {
+  if (previewKind.value === 'video') {
+    return 'mdi-motion-play'
+  }
+  if (previewKind.value === 'image') {
+    return 'mdi-image-outline'
+  }
+  return 'mdi-view-comfy-outline'
+})
+const hasVideos = computed(() => previewKind.value !== 'image')
+const generateButtonLabel = computed(() => previewKind.value === 'combined'
+  ? 'Generate 5 pairs'
+  : 'Generate 5 previews')
+const loadingHeading = computed(() => previewKind.value === 'combined'
+  ? 'Generating five video and thumbnail pairs…'
+  : 'Generating all five previews…')
 const orderedPreviews = computed(() => {
   if (!batchResult.value) {
     return []
   }
 
+  const items = batchResult.value.data.map(item => {
+    if ('previewUrl' in item) {
+      return {
+        template: item.template,
+        videoUrl: previewKind.value === 'video' ? item.previewUrl : null,
+        thumbnailUrl: previewKind.value === 'image' ? item.previewUrl : null,
+      }
+    }
+
+    return {
+      template: item.template,
+      videoUrl: item.videoUrl,
+      thumbnailUrl: item.thumbnailUrl,
+    }
+  })
   const order = new Map(BATCH_TEMPLATE_ORDER.map((template, index) => [template, index]))
-  return [...batchResult.value.data].sort((left, right) => (
+  return items.sort((left, right) => (
     (order.get(left.template) ?? Number.MAX_SAFE_INTEGER)
     - (order.get(right.template) ?? Number.MAX_SAFE_INTEGER)
   ))
 })
+const resultHeading = computed(() => previewKind.value === 'combined'
+  ? `${orderedPreviews.value.length} template pairs generated`
+  : `${orderedPreviews.value.length} previews generated`)
 
 function errorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback
@@ -315,7 +400,11 @@ async function playBatchVideos(reset = false): Promise<void> {
   videosPlaying.value = results.length > 0 && results.every(result => result.status === 'fulfilled')
 }
 
-function markVideoReady(previewUrl: string): void {
+function markVideoReady(previewUrl: string | null): void {
+  if (!previewUrl) {
+    return
+  }
+
   readyVideoUrls.add(previewUrl)
   if (batchResult.value && readyVideoUrls.size === batchResult.value.data.length) {
     videosReady.value = true
@@ -340,8 +429,16 @@ function setPreviewKind(kind: CoverPreviewBatchKind): void {
   resetBatch()
 }
 
-function openPreview(item: CoverPreviewBatchItem): void {
-  selectedPreview.value = item
+function openPreview(
+  item: { template: TrackVideoTemplate, videoUrl: string | null, thumbnailUrl: string | null },
+  mediaKind: 'video' | 'image',
+): void {
+  const url = mediaKind === 'video' ? item.videoUrl : item.thumbnailUrl
+  if (!url) {
+    return
+  }
+
+  selectedPreview.value = { template: item.template, mediaKind, url }
   previewDialogOpen.value = true
 }
 
@@ -364,10 +461,14 @@ async function generateBatch(): Promise<void> {
   previewDialogOpen.value = false
 
   try {
-    const createBatch = previewKind.value === 'video'
-      ? createCoverVideoPreviewBatch
-      : createCoverImagePreviewBatch
-    const result = await createBatch(track.value.pictureUrl, batchController.signal)
+    let result: CoverPreviewBatchResult | CoverCombinedPreviewBatchResult
+    if (previewKind.value === 'video') {
+      result = await createCoverVideoPreviewBatch(track.value.pictureUrl, batchController.signal)
+    } else if (previewKind.value === 'image') {
+      result = await createCoverImagePreviewBatch(track.value.pictureUrl, batchController.signal)
+    } else {
+      result = await createCoverCombinedPreviewBatch(track.value.pictureUrl, batchController.signal)
+    }
     if (requestSequence === batchRequestSequence) {
       batchResult.value = result
     }
@@ -574,11 +675,13 @@ onBeforeUnmount(() => {
 
 .preview-kind__options {
   display: flex;
+  flex-wrap: wrap;
   gap: 9px;
 }
 
 .preview-kind__option {
   display: grid;
+  flex: 1 1 168px;
   grid-template-columns: auto auto;
   gap: 2px 8px;
   min-width: 168px;
@@ -653,6 +756,10 @@ onBeforeUnmount(() => {
   min-width: 760px;
 }
 
+.preview-grid--combined {
+  min-width: 1200px;
+}
+
 .preview-card {
   min-width: 0;
   overflow: hidden;
@@ -670,6 +777,33 @@ onBeforeUnmount(() => {
   overflow: hidden;
   background: #0d0e12;
   border: 0;
+}
+
+.preview-card__media-set {
+  display: block;
+}
+
+.preview-card--combined .preview-card__media-set {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  background: rgba(var(--v-theme-on-surface), 0.12);
+}
+
+.preview-card__asset-label {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 1;
+  padding: 4px 7px;
+  color: white;
+  font-size: 0.58rem;
+  font-weight: 780;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: rgba(8, 9, 12, 0.72);
+  border-radius: 999px;
 }
 
 .preview-card__media {
@@ -741,6 +875,13 @@ onBeforeUnmount(() => {
   text-decoration: none;
 }
 
+.preview-card__links {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  align-items: center;
+}
+
 .preview-card--loading .preview-card__copy {
   color: rgba(var(--v-theme-on-surface), 0.42);
 }
@@ -801,7 +942,7 @@ onBeforeUnmount(() => {
   }
 
   .preview-kind__option {
-    flex: 1;
+    flex: 1 1 100%;
     min-width: 0;
   }
 

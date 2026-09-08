@@ -9,11 +9,13 @@ import { useVideoTemplates } from '@/composables/useVideoTemplates'
 import { COVER_PREVIEW_TRACK_URLS } from '@/data/coverPreviewTracks'
 import appRouter from '@/router'
 import {
+  createCoverCombinedPreviewBatch,
   createCoverImagePreviewBatch,
   createCoverVideoPreviewBatch,
   getCoverPreviewTrack,
 } from '@/services/api'
 import type {
+  CoverCombinedPreviewBatchResult,
   CoverPreviewBatchResult,
   CoverPreviewTrackMetadata,
 } from '@/types/trackVideo'
@@ -21,6 +23,7 @@ import CoverTemplateComparisonView from '@/views/CoverTemplateComparisonView.vue
 
 vi.mock('@/composables/useVideoTemplates', () => ({ useVideoTemplates: vi.fn() }))
 vi.mock('@/services/api', () => ({
+  createCoverCombinedPreviewBatch: vi.fn(),
   createCoverImagePreviewBatch: vi.fn(),
   createCoverVideoPreviewBatch: vi.fn(),
   getCoverPreviewTrack: vi.fn(),
@@ -81,6 +84,15 @@ const imageBatch: CoverPreviewBatchResult = {
   totalDurationMs: 840,
 }
 
+const combinedBatch: CoverCombinedPreviewBatchResult = {
+  data: videoBatch.data.map(item => ({
+    template: item.template,
+    videoUrl: item.previewUrl,
+    thumbnailUrl: item.previewUrl.replace('.mp4', '.jpg'),
+  })),
+  totalDurationMs: 1340,
+}
+
 const templateNames: Record<string, string> = {
   orbit: 'Sonic Halo',
   'music-visualizer': 'Chromatic Waves',
@@ -125,6 +137,7 @@ describe('Cover template comparison', () => {
     vi.mocked(getCoverPreviewTrack).mockResolvedValue(track)
     vi.mocked(createCoverVideoPreviewBatch).mockResolvedValue(videoBatch)
     vi.mocked(createCoverImagePreviewBatch).mockResolvedValue(imageBatch)
+    vi.mocked(createCoverCombinedPreviewBatch).mockResolvedValue(combinedBatch)
   })
 
   it('loads track metadata without generating until the user requests a batch', async () => {
@@ -139,6 +152,7 @@ describe('Cover template comparison', () => {
     expect(wrapper.get('.selected-track img').attributes('src')).toBe(track.pictureUrl)
     expect(createCoverVideoPreviewBatch).not.toHaveBeenCalled()
     expect(createCoverImagePreviewBatch).not.toHaveBeenCalled()
+    expect(createCoverCombinedPreviewBatch).not.toHaveBeenCalled()
   })
 
   it('generates and orders all five motion previews after an explicit click', async () => {
@@ -180,6 +194,25 @@ describe('Cover template comparison', () => {
     expect(createCoverImagePreviewBatch).toHaveBeenCalledExactlyOnceWith(track.pictureUrl, expect.any(AbortSignal))
     expect(wrapper.findAll('.preview-card img')).toHaveLength(5)
     expect(wrapper.get('.results-heading').text()).toContain('Completed in 840 ms')
+  })
+
+  it('renders each combined video and thumbnail pair from one batch request', async () => {
+    const wrapper = mountView()
+    await wrapper.findAll('.track-option')[1].trigger('click')
+    await flushPromises()
+
+    await wrapper.get('.preview-kind__option[data-type="combined"]').trigger('click')
+    await wrapper.get('.generate-batch').trigger('click')
+    await flushPromises()
+
+    expect(createCoverCombinedPreviewBatch).toHaveBeenCalledExactlyOnceWith(track.pictureUrl, expect.any(AbortSignal))
+    expect(createCoverVideoPreviewBatch).not.toHaveBeenCalled()
+    expect(createCoverImagePreviewBatch).not.toHaveBeenCalled()
+    expect(wrapper.findAll('.preview-card')).toHaveLength(5)
+    expect(wrapper.findAll('.preview-card video')).toHaveLength(5)
+    expect(wrapper.findAll('.preview-card img')).toHaveLength(5)
+    expect(wrapper.get('.results-heading').text()).toContain('5 template pairs generated')
+    expect(wrapper.get('.results-heading').text()).toContain('Completed in 1.3 s')
   })
 
   it('does not enable generation for unsupported profile-picture tracks', async () => {
