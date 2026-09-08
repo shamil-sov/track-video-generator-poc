@@ -760,6 +760,10 @@ onBeforeUnmount(() => {
   min-width: 1200px;
 }
 
+.preview-grid--combined .preview-placeholder {
+  aspect-ratio: 18 / 16;
+}
+
 .preview-card {
   min-width: 0;
   overflow: hidden;
