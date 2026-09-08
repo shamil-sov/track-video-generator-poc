@@ -31,13 +31,14 @@ export const API_BASE_URL = (
   || 'https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3'
 ).replace(/\/$/, '')
 
-const JOBS_URL = `${API_BASE_URL}/track-video-generator/jobs`
-const VIDEO_TEMPLATES_URL = `${API_BASE_URL}/track-video-generator/video-templates`
-const VIDEO_PREVIEWS_URL = `${API_BASE_URL}/track-video-generator/video-previews`
-const VIDEO_PREVIEW_BATCHES_URL = `${API_BASE_URL}/track-video-generator/video-preview-batches`
-const IMAGE_PREVIEW_BATCHES_URL = `${API_BASE_URL}/track-video-generator/image-preview-batches`
+const TRACK_VIDEO_GENERATOR_URL = `${API_BASE_URL}/track-video-generator/prototype`
+const JOBS_URL = `${TRACK_VIDEO_GENERATOR_URL}/jobs`
+const VIDEO_TEMPLATES_URL = `${TRACK_VIDEO_GENERATOR_URL}/video-templates`
+const VIDEO_PREVIEWS_URL = `${TRACK_VIDEO_GENERATOR_URL}/video-previews`
+const VIDEO_PREVIEW_BATCHES_URL = `${TRACK_VIDEO_GENERATOR_URL}/video-preview-batches`
+const IMAGE_PREVIEW_BATCHES_URL = `${TRACK_VIDEO_GENERATOR_URL}/image-preview-batches`
 
-const AI_IMAGE_API_URL = `${API_BASE_URL}/track-video-generator`
+const AI_IMAGE_API_URL = TRACK_VIDEO_GENERATOR_URL
 const AI_IMAGE_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-visual-styles`
 const AI_IMAGE_EXCLUDED_STYLES_URL = `${AI_IMAGE_API_URL}/ai-image-excluded-visual-styles`
 const AI_IMAGE_TEMPLATES_URL = `${AI_IMAGE_API_URL}/ai-image-video-templates`

@@ -35,7 +35,7 @@ describe('API client', () => {
 
     await expect(createJob('https://www.bandlab.com/track/track-id', 'orbit')).resolves.toEqual(result)
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-      `${API_BASE_URL}/track-video-generator/jobs`,
+      `${API_BASE_URL}/track-video-generator/prototype/jobs`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -81,7 +81,7 @@ describe('API client', () => {
       { id: 'macro-relic', name: 'Macro Relic', exampleImageUrls: ['second.jpg', 'third.jpg', 'first.jpg'] },
     ])
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-      `${API_BASE_URL}/track-video-generator/ai-image-excluded-visual-styles`,
+      `${API_BASE_URL}/track-video-generator/prototype/ai-image-excluded-visual-styles`,
     )
   })
 
@@ -118,7 +118,7 @@ describe('API client', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(getVideoTemplates()).resolves.toEqual(templates)
-    expect(String(fetchMock.mock.calls[0][0])).toContain('/track-video-generator/video-templates')
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/track-video-generator/prototype/video-templates')
   })
 
   it.each([
@@ -209,7 +209,7 @@ describe('API client', () => {
       { resolution: '720x1280', frameRate: 24 },
     )).resolves.toEqual(result)
     expect(fetchMock).toHaveBeenCalledExactlyOnceWith(
-      `${API_BASE_URL}/track-video-generator/video-previews`,
+      `${API_BASE_URL}/track-video-generator/prototype/video-previews`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -241,7 +241,7 @@ describe('API client', () => {
 
     expect(fetchMock.mock.calls).toEqual([
       [
-        `${API_BASE_URL}/track-video-generator/video-preview-batches`,
+        `${API_BASE_URL}/track-video-generator/prototype/video-preview-batches`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -251,7 +251,7 @@ describe('API client', () => {
         },
       ],
       [
-        `${API_BASE_URL}/track-video-generator/image-preview-batches`,
+        `${API_BASE_URL}/track-video-generator/prototype/image-preview-batches`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -300,7 +300,7 @@ describe('API client', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     await expect(getAiImageVideoTemplates()).resolves.toEqual(templates)
-    expect(String(fetchMock.mock.calls[0][0])).toContain('/track-video-generator/ai-image-video-templates')
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/track-video-generator/prototype/ai-image-video-templates')
   })
 
   it('submits AI-image video jobs with only the track URL and selected catalogue IDs', async () => {
@@ -315,7 +315,7 @@ describe('API client', () => {
     await createAiImageVideoJob(trackUrl, 'vinyl-orbit', 'living-impasto')
 
     const [url, request] = fetchMock.mock.calls[0]
-    expect(String(url)).toContain('/track-video-generator/ai-image-video-jobs')
+    expect(String(url)).toContain('/track-video-generator/prototype/ai-image-video-jobs')
     expect(request.method).toBe('POST')
     expect(JSON.parse(request.body)).toEqual({
       trackUrl,
@@ -375,7 +375,7 @@ describe('API client', () => {
     )
 
     const [url, request] = fetchMock.mock.calls[0]
-    expect(String(url)).toContain('/track-video-generator/ai-image-jobs')
+    expect(String(url)).toContain('/track-video-generator/prototype/ai-image-jobs')
     expect(JSON.parse(request.body)).toEqual({
       prompt: 'Cover art for {trackName}',
       trackUrl: 'https://test.bandlab.com/track/5f42bf92-e3de-ed11-8aae-501ac5ee31b6',

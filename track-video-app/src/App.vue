@@ -57,7 +57,7 @@
         <span>Track Video Generator · experimental client</span>
         <div class="app-footer__links">
           <a
-            href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3/track-video-generator/jobs?limit=50"
+            href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3/track-video-generator/prototype/jobs?limit=50"
             target="_blank"
             rel="noopener"
           >
@@ -65,7 +65,7 @@
             <v-icon icon="mdi-open-in-new" size="13" />
           </a>
           <a
-            href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3/track-video-generator/ai-image-video-jobs?limit=50"
+            href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3/track-video-generator/prototype/ai-image-video-jobs?limit=50"
             target="_blank"
             rel="noopener"
           >
@@ -73,7 +73,7 @@
             <v-icon icon="mdi-open-in-new" size="13" />
           </a>
           <a
-            href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3/track-video-generator/ai-image-jobs?limit=50"
+            href="https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3/track-video-generator/prototype/ai-image-jobs?limit=50"
             target="_blank"
             rel="noopener"
           >
