@@ -134,7 +134,7 @@ describe('AI-video insights navigation', () => {
     expect(wrapper.findAll('tbody td').map(value => value.text())).toEqual(['Sonic Halo', '3', '30 s', '40 s'])
     expect(wrapper.get('.app-nav [aria-label="AI-image videos"]').attributes('data-variant')).toBe('tonal')
     expect(wrapper.get('.app-nav [aria-label="Cover videos"]').attributes('data-variant')).toBe('text')
-    expect(wrapper.findAll('.app-nav a')).toHaveLength(3)
+    expect(wrapper.findAll('.app-nav a')).toHaveLength(4)
     expect(wrapper.get('.ai-video-section-nav a[href="/ai-image-videos/insights"]').attributes('data-variant')).toBe('tonal')
   })
 

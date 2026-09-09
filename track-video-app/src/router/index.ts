@@ -6,6 +6,11 @@ const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
   routes: [
     {
+      path: '/track-videos',
+      name: 'production-track-videos',
+      component: () => import('@/views/ProductionTrackVideosView.vue'),
+    },
+    {
       path: '/',
       name: 'home',
       component: HomeView,

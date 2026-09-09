@@ -13,6 +13,7 @@ A lightweight GitHub Pages client for the experimental BandLab Track Video Gener
 - browses both global video histories with search and filters;
 - plays completed MP4s and exposes full job metadata;
 - summarizes end-to-end performance separately for both workflows.
+- tests the production Track Video flow in a separate, ephemeral page with track resolution, segment selection, previews, job polling, and video download.
 
 The deployed client uses the existing UAT API Gateway for both workflows:
 
@@ -21,6 +22,24 @@ https://septxumlfc.execute-api.ap-southeast-1.amazonaws.com/api/v1.3
 ```
 
 Override it locally with `VITE_API_BASE_URL`.
+
+## Production Track Video feature
+
+The separate **Track videos** tab (`#/track-videos`) uses `/api/v1.3/track-videos`, not the prototype endpoints.
+Its API host is **TBD**. Set `VITE_TRACK_VIDEOS_API_BASE_URL` to the confirmed HTTPS base URL ending in `/api/v1.3`
+and rebuild to enable previews and generation. While it is unset, track loading and audio segment selection remain available.
+
+The page uses the configured example track list and also accepts pasted BandLab track URLs. Metadata is loaded from the
+matching public BandLab environment, using the pinned revision when `revId` is present. Preview requests send only the cover;
+generation requests send the cover, audio, selected template ID, and fractional start time. The clip runs for up to 15 seconds
+or the remaining audio duration, whichever is shorter.
+
+The client polls only the submitted job every 2.5 seconds. Polling stops on completion or failure; after three consecutive
+status-check errors, the user can resume checking the same job without resubmitting. Leaving the page or choosing Stop waiting
+clears client state and stops polling; it does not cancel server work. No history or job ID is stored in browser storage.
+Completed videos attempt audio autoplay, fall back to muted autoplay if blocked, and expose playback and download controls.
+
+Track posting and uploading are not part of this test page.
 
 ## Local development
 

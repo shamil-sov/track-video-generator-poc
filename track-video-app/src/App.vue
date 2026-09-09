@@ -43,6 +43,15 @@
           >
             Style explorer
           </v-btn>
+          <v-btn
+            :to="{ name: 'production-track-videos' }"
+            :variant="route.name === 'production-track-videos' ? 'tonal' : 'text'"
+            rounded="lg"
+            prepend-icon="mdi-play-box-outline"
+            aria-label="Track videos — production feature"
+          >
+            Track videos
+          </v-btn>
         </nav>
 
       </v-container>
@@ -112,7 +121,7 @@ const isCoverRoute = computed(() => (
 
 .app-bar__inner {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) auto minmax(150px, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 20px;
   align-items: center;
   height: 100%;

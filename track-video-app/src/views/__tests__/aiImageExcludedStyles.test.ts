@@ -125,7 +125,7 @@ describe('Not-included AI visual styles', () => {
     expect(wrapper.find('form').exists()).toBe(false)
     expect(wrapper.find('.generator-card').exists()).toBe(false)
     expect(wrapper.find('.library-section').exists()).toBe(false)
-    expect(wrapper.findAll('.app-nav a')).toHaveLength(3)
+    expect(wrapper.findAll('.app-nav a')).toHaveLength(4)
     expect(wrapper.get('.app-nav [aria-label="AI-image videos"]').attributes('data-variant')).toBe('tonal')
     expect(wrapper.findAll('.ai-video-section-nav a')).toHaveLength(3)
     expect(wrapper.get('.ai-video-section-nav a[href="/ai-image-videos/excluded-styles"]').attributes('data-variant')).toBe('tonal')
