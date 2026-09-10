@@ -29,7 +29,7 @@ import { shuffled } from '@/utils/shuffle'
 
 export const API_BASE_URL = (
   import.meta.env.VITE_API_BASE_URL
-  || 'https://yt6hyal4t5.execute-api.ap-southeast-1.amazonaws.com/api/v1.3'
+  || 'https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3'
 ).replace(/\/$/, '')
 
 const TRACK_VIDEO_GENERATOR_URL = `${API_BASE_URL}/track-video-generator/prototype`
