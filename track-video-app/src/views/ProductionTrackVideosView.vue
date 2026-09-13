@@ -92,7 +92,7 @@
               :key="selectedPreview.videoPreviewUrl"
               ref="templateVideo"
               :src="selectedPreview.videoPreviewUrl"
-              :poster="selectedPreview.thumbnailUrl"
+              :poster="selectedPreview.picture.url"
               :autoplay="!showGeneration" muted loop playsinline controls
               :aria-label="`${selectedTemplate.name} template preview`"
               @error="previewPlaybackError = 'This preview could not be played. Try refreshing the previews.'"
@@ -129,7 +129,7 @@
           >
             <img
               v-if="previewFor(template.id) && !previewsLoading"
-              :src="previewFor(template.id)!.thumbnailUrl" :alt="`${template.name} preview`"
+              :src="previewFor(template.id)!.picture.url" :alt="`${template.name} preview`"
             />
             <div v-else class="template-placeholder"><v-icon icon="mdi-movie-outline" size="24" /></div>
             <span>{{ template.name }}</span>
@@ -215,7 +215,7 @@ const canGenerate = computed(() => bearerToken.value && track.value && validStar
 const showGeneration = ref(false)
 const generationName = ref('')
 const generationSummary = ref('')
-const generationFailure = computed(() => error.value || (job.value?.status === 'failed' ? job.value.errorMessage : null))
+const generationFailure = computed(() => error.value || (job.value?.status === 'failed' ? job.value.error.message : null))
 const elapsedSeconds = ref(0)
 const templateVideo = ref<HTMLVideoElement | null>(null)
 const resultVideo = ref<HTMLVideoElement | null>(null)

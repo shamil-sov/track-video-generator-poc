@@ -31,7 +31,9 @@ const track = {
   trackUrl: 'https://bandlab.com/track/8398d42e-0504-40c6-b882-bbf42294c641', postId: 'post-id', revisionId: 'revision-id',
   name: 'Blue Ridge Mountains', artistName: 'Artist', pictureUrl: 'https://cdn.example/cover.jpg', audioUrl: 'https://cdn.example/audio.m4a', durationSeconds: 50.25,
 }
-const previews = TRACK_VIDEO_TEMPLATES.map(template => ({ templateId: template.id, videoPreviewUrl: `${template.id}.mp4`, thumbnailUrl: `${template.id}.jpg` }))
+const previews = TRACK_VIDEO_TEMPLATES.map(template => ({
+  templateId: template.id, videoPreviewUrl: `${template.id}.mp4`, picture: { url: `${template.id}.jpg`, isDefault: false },
+}))
 const completed = { jobId: 'job-1', status: 'completed' as const, templateId: 'sound-wave' as const, videoUrl: 'https://cdn.example/result.mp4' }
 let wrapper: ReturnType<typeof mount>
 
@@ -116,13 +118,35 @@ describe('Production Track Video page', () => {
     expect(wrapper.get('.generation-summary').text()).toContain('0:47.25 → 0:50.25')
   })
 
-  it('displays job failure and stops polling', async () => {
-    vi.mocked(getProductionGeneration).mockResolvedValue({ jobId: 'job-1', status: 'failed', errorMessage: 'Audio download failed.' })
+  it('displays the nested job failure and stops polling', async () => {
+    vi.mocked(getProductionGeneration).mockResolvedValue({ jobId: 'job-1', status: 'failed', error: { message: 'Audio download failed.' } })
     mountPage()
     await startVideo()
     await vi.advanceTimersByTimeAsync(15000)
     expect(wrapper.get('.generation-player').text()).toContain('Audio download failed.')
+    expect(wrapper.get('.generation-heading h2').text()).toBe('Generation failed')
     expect(getProductionGeneration).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows all five picture thumbnails and switches the selected preview by template ID', async () => {
+    vi.mocked(createProductionPreviews).mockResolvedValueOnce([...previews].reverse())
+    mountPage()
+    await useToken()
+    await loadTrack()
+
+    const options = wrapper.findAll('.production-template-option')
+    expect(options).toHaveLength(5)
+    for (const [index, preview] of previews.entries()) {
+      const option = options[index]!
+      expect(option.get('img').attributes('src')).toBe(preview.picture.url)
+      await option.trigger('click')
+      const player = wrapper.get('.production-preview video')
+      expect(player.attributes('src')).toBe(preview.videoPreviewUrl)
+      expect(player.attributes('poster')).toBe(preview.picture.url)
+      expect(option.attributes('aria-pressed')).toBe('true')
+    }
+    expect(createProductionPreviews).toHaveBeenCalledTimes(1)
+    expect(getProductionGeneration).not.toHaveBeenCalled()
   })
 
   it('falls back to muted autoplay when the browser blocks audio playback', async () => {

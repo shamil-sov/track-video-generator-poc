@@ -51,7 +51,10 @@ describe('Production Track Video contract', () => {
   })
 
   it('uses separate preview and generation contracts and polls only the returned job ID', async () => {
-    const previews = [{ templateId: 'audio-ring', videoPreviewUrl: 'preview.mp4', thumbnailUrl: 'thumbnail.jpg' }]
+    const previews = ['audio-ring', 'sound-wave', 'record-player', 'vinyl-sleeve', 'music-notes'].map(templateId => ({
+      templateId, videoPreviewUrl: `https://cdn.example/${templateId}.mp4`,
+      picture: { url: `https://cdn.example/${templateId}.jpg`, isDefault: false },
+    }))
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ items: previews })))
       .mockResolvedValueOnce(new Response(JSON.stringify({ jobId: 'job-id', status: 'queued' }), { status: 202 }))
@@ -74,6 +77,12 @@ describe('Production Track Video contract', () => {
       expect(url).not.toContain('test-token')
       expect(options.body || '').not.toContain('test-token')
     }
+  })
+
+  it('returns a failed job with the nested API error message', async () => {
+    const failed = { jobId: 'job-id', status: 'failed', error: { message: 'The source media could not be downloaded.' } }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(failed))))
+    await expect(getProductionGeneration(TRACK_VIDEOS_API_BASE_URL, 'job-id', 'test-token')).resolves.toEqual(failed)
   })
 
   it.each(['', '   ', 'Bearer '])('does not send production requests without a token: %j', async token => {

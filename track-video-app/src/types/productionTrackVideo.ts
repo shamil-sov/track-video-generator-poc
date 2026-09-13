@@ -22,7 +22,7 @@ export interface ProductionTrack {
 export interface ProductionTrackPreview {
   templateId: ProductionTemplateId
   videoPreviewUrl: string
-  thumbnailUrl: string
+  picture: { url: string, isDefault: boolean }
 }
 
 export interface TrackVideoGenerationRequest {
@@ -35,7 +35,7 @@ export interface TrackVideoGenerationRequest {
 export type TrackVideoGeneration =
   | { jobId: string, status: 'queued' | 'processing' }
   | { jobId: string, status: 'completed', templateId: ProductionTemplateId, videoUrl: string }
-  | { jobId: string, status: 'failed', errorMessage: string }
+  | { jobId: string, status: 'failed', error: { message: string } }
 
 export function segmentDuration(durationSeconds: number, startTimeSeconds: number): number {
   return Math.max(0, Math.min(15, durationSeconds - startTimeSeconds))

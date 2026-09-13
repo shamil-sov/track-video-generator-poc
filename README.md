@@ -40,6 +40,10 @@ matching public BandLab environment, using the pinned revision when `revId` is p
 generation requests send the cover, audio, selected template ID, and fractional start time. The clip runs for up to 15 seconds
 or the remaining audio duration, whichever is shorter.
 
+The synchronous preview response contains five `items`, each with a `templateId`, `videoPreviewUrl`, and
+`picture: { url, isDefault }`. The picker uses `picture.url` for thumbnails and `videoPreviewUrl` for selected playback.
+Failed generation jobs expose their message in `error.message`.
+
 The client polls only the submitted job every 2.5 seconds. Polling stops on completion or failure; after three consecutive
 status-check errors, the user can resume checking the same job without resubmitting. Leaving the page or choosing Stop waiting
 clears client state and stops polling; it does not cancel server work. No history or job ID is stored in browser storage.
