@@ -35,10 +35,12 @@ It is sent only in the `Authorization` header of these requests, never to the pr
 The token stays in page memory only; it is cleared on leaving or refreshing the page and can be removed with **Clear token**.
 Do not put tokens in build configuration or commit them. Track loading and segment selection work without a token.
 
-The page uses the configured example track list and also accepts pasted BandLab track URLs. Metadata is loaded from the
+The page shows 14 named track preset buttons and also accepts pasted BandLab track URLs. Selecting a preset fills its URL
+and loads the track immediately. Metadata is loaded from the
 matching public BandLab environment, using the pinned revision when `revId` is present. Preview requests send only the cover;
 generation requests send the cover, audio, selected template ID, and fractional start time. The clip runs for up to 15 seconds
 or the remaining audio duration, whichever is shorter.
+The segment picker highlights this window, prominently shows its duration, and explains when fewer than 15 seconds remain.
 
 The synchronous preview response contains five `items`, each with a `templateId`, `videoPreviewUrl`, and
 `picture: { url, isDefault }`. The picker uses `picture.url` for thumbnails and `videoPreviewUrl` for selected playback.

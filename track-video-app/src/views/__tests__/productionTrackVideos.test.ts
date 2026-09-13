@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ProductionTrackVideosView from '@/views/ProductionTrackVideosView.vue'
 import TrackSegmentPicker from '@/components/TrackSegmentPicker.vue'
+import { PRODUCTION_TRACK_PRESETS } from '@/data/productionTrackPresets'
 import { createProductionPreviews, getProductionGeneration, resolveProductionTrack, startProductionGeneration } from '@/services/productionTrackVideo'
 import { TRACK_VIDEO_TEMPLATES } from '@/types/productionTrackVideo'
 
@@ -22,10 +23,6 @@ const input = defineComponent({
 const button = defineComponent({
   props: ['disabled'], template: '<button :disabled="disabled"><slot /></button>',
 })
-const select = defineComponent({
-  props: ['items'], emits: ['update:modelValue'],
-  template: '<select aria-label="Example tracks" @change="$emit(\'update:modelValue\', $event.target.value)"><option value="">Choose</option><option v-for="item in items" :value="item.value">{{ item.title }}</option></select>',
-})
 const dialog = defineComponent({ props: ['modelValue'], template: '<div v-if="modelValue" class="test-dialog"><slot /></div>' })
 const track = {
   trackUrl: 'https://bandlab.com/track/8398d42e-0504-40c6-b882-bbf42294c641', postId: 'post-id', revisionId: 'revision-id',
@@ -39,7 +36,7 @@ let wrapper: ReturnType<typeof mount>
 
 function mountPage() {
   wrapper = mount(ProductionTrackVideosView, { global: { stubs: {
-    VContainer: container, VCard: container, VBtn: button, VTextField: input, VSelect: select,
+    VContainer: container, VCard: container, VBtn: button, VTextField: input,
     VDialog: dialog, VAlert: container, VProgressCircular: true, VIcon: true,
   } } })
   return wrapper
@@ -79,6 +76,63 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('Production Track Video page', () => {
+  it('loads a named preset immediately and allows switching to a custom track URL', async () => {
+    mountPage()
+    await useToken()
+    const preset = PRODUCTION_TRACK_PRESETS[0]
+    const options = wrapper.findAll('.track-preset')
+    expect(options).toHaveLength(PRODUCTION_TRACK_PRESETS.length)
+    expect(options[0]!.text()).toBe(preset.name)
+    await options[0]!.trigger('click')
+    await flushPromises()
+    const urlInput = wrapper.get('input[aria-label="BandLab track URL"]')
+    expect((urlInput.element as HTMLInputElement).value).toBe(preset.url)
+    expect(options[0]!.attributes('aria-pressed')).toBe('true')
+    expect(resolveProductionTrack).toHaveBeenCalledExactlyOnceWith(preset.url, expect.any(AbortSignal))
+    expect(createProductionPreviews).toHaveBeenCalledTimes(1)
+    await urlInput.setValue(track.trackUrl)
+    expect(options[0]!.attributes('aria-pressed')).toBe('false')
+    expect(resolveProductionTrack).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    await wrapper.get('.track-url-form').trigger('submit')
+    await flushPromises()
+    expect(resolveProductionTrack).toHaveBeenLastCalledWith(track.trackUrl, expect.any(AbortSignal))
+    expect(createProductionPreviews).toHaveBeenCalledTimes(2)
+    expect(wrapper.get('.production-generate').attributes()).not.toHaveProperty('disabled')
+  })
+
+  it('clearly labels the 15-second segment and updates the highlighted window and shorter ending', async () => {
+    mountPage()
+    await loadTrack()
+    const picker = wrapper.findComponent(TrackSegmentPicker)
+    expect(picker.get('h2').text()).toBe('Choose a 15-second segment')
+    expect(picker.get('.segment-duration').text()).toBe('15 seconds selected')
+    expect(picker.find('.segment-short-note').exists()).toBe(false)
+    const slider = picker.get<HTMLInputElement>('.segment-slider')
+    expect(slider.attributes('aria-valuetext')).toBe('0:00.00 to 0:15.00, 15 seconds')
+    expect(slider.element.style.getPropertyValue('--segment-start')).toBe('0%')
+    expect(parseFloat(slider.element.style.getPropertyValue('--segment-end'))).toBeCloseTo(15 / 50.25 * 100)
+    await wrapper.get('input[aria-label="Start (seconds)"]').setValue('47.25')
+    expect(picker.get('.segment-duration').text()).toBe('3 seconds selected')
+    expect(picker.get('.segment-short-note').text()).toContain('Only 3 seconds remain')
+    expect(slider.attributes('aria-valuetext')).toBe('0:47.25 to 0:50.25, 3 seconds')
+    expect(slider.element.style.getPropertyValue('--segment-end')).toBe('100%')
+    expect(parseFloat(slider.element.style.getPropertyValue('--segment-start'))).toBeCloseTo(47.25 / 50.25 * 100)
+    await wrapper.get('input[aria-label="Start (seconds)"]').setValue('')
+    expect(picker.find('.segment-duration').exists()).toBe(false)
+    expect(picker.find('.segment-short-note').exists()).toBe(false)
+    expect(picker.get('.segment-window').text()).toContain('Enter a valid start time')
+  })
+
+  it('shows the actual segment duration for a track shorter than 15 seconds', async () => {
+    vi.mocked(resolveProductionTrack).mockResolvedValueOnce({ ...track, durationSeconds: 8.5 })
+    mountPage()
+    await loadTrack()
+    expect(wrapper.get('.segment-duration').text()).toBe('8.50 seconds selected')
+    expect(wrapper.get('.segment-short-note').text()).toContain('Only 8.50 seconds remain')
+    expect(wrapper.get('.segment-window').text()).toBe('0:00.00 → 0:08.50')
+  })
+
   it('masks the token and keeps it out of browser storage', async () => {
     const saveLocal = vi.fn()
     const saveSession = vi.fn()
@@ -272,5 +326,6 @@ describe('Production Track Video page', () => {
     await startVideo()
     expect(wrapper.get('input[aria-label="BandLab bearer token"]').attributes()).toHaveProperty('disabled')
     expect(wrapper.findAll('button').find(item => item.text() === 'Clear token')!.attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('.track-preset').attributes()).toHaveProperty('disabled')
   })
 })

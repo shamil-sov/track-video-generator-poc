@@ -27,17 +27,17 @@
 
       <v-card class="production-panel" rounded="xl" elevation="0">
         <h2>Track</h2>
-        <v-select
-          class="example-tracks"
-          :items="trackOptions"
-          label="Example tracks"
-          :model-value="exampleTrack"
-          :disabled="active"
-          variant="outlined"
-          density="comfortable"
-          hide-details
-          @update:model-value="chooseExample"
-        />
+        <h3 id="preset-tracks-heading" class="preset-tracks-heading">Preset tracks</h3>
+        <div class="track-presets" role="group" aria-labelledby="preset-tracks-heading">
+          <button
+            v-for="preset in PRODUCTION_TRACK_PRESETS" :key="preset.url"
+            type="button" class="track-preset"
+            :aria-pressed="trackUrlInput.trim() === preset.url"
+            :disabled="active"
+            @click="choosePreset(preset.url)"
+          >{{ preset.name }}</button>
+        </div>
+        <p class="custom-track-label">Or paste your own track URL</p>
         <form class="track-url-form" @submit.prevent="loadTrack(trackUrlInput)">
           <v-text-field
             v-model="trackUrlInput"
@@ -184,7 +184,7 @@
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import TrackSegmentPicker from '@/components/TrackSegmentPicker.vue'
 import { useProductionGeneration } from '@/composables/useProductionGeneration'
-import { COVER_PREVIEW_TRACK_URLS } from '@/data/coverPreviewTracks'
+import { PRODUCTION_TRACK_PRESETS } from '@/data/productionTrackPresets'
 import { createProductionPreviews, resolveProductionTrack, TRACK_VIDEOS_API_BASE_URL } from '@/services/productionTrackVideo'
 import { TRACK_VIDEO_TEMPLATES, segmentDuration, segmentTime, validSegmentStart } from '@/types/productionTrackVideo'
 import type { ProductionTemplateId, ProductionTrack, ProductionTrackPreview } from '@/types/productionTrackVideo'
@@ -194,8 +194,6 @@ const bearerToken = ref('')
 const normalizedTokenInput = computed(() => tokenInput.value.trim().replace(/^Bearer(?:\s+|$)/i, '').trim())
 const trackUrlInput = ref('')
 const loadedTrackUrl = ref('')
-const exampleTrack = ref<string | null>(null)
-const trackOptions = COVER_PREVIEW_TRACK_URLS.map(url => ({ title: url, value: url }))
 const track = ref<ProductionTrack | null>(null)
 const trackLoading = ref(false)
 const trackError = ref<string | null>(null)
@@ -256,8 +254,8 @@ function useToken(): void {
   if (track.value) void loadPreviews()
 }
 
-function chooseExample(value: string): void {
-  exampleTrack.value = value
+function choosePreset(value: string): void {
+  if (active.value) return
   trackUrlInput.value = value
   void loadTrack(value)
 }
@@ -411,7 +409,13 @@ onBeforeUnmount(() => {
 .token-form { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
 .token-form :deep(.v-input) { min-width: 220px; flex: 1; }
 .token-note { margin-top: 12px; color: rgba(var(--v-theme-on-surface), .65); font-size: .875rem; }
-.example-tracks { margin: 18px 0 12px; }
+.preset-tracks-heading { margin: 18px 0 10px; font-size: .875rem; font-weight: 600; }
+.track-presets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 8px; }
+.track-preset { padding: 10px 12px; text-align: left; font: inherit; font-size: .875rem; line-height: 1.4; border: 1px solid rgba(var(--v-theme-on-surface), .16); border-radius: 10px; background: transparent; color: rgb(var(--v-theme-on-surface)); cursor: pointer; }
+.track-preset:hover:not(:disabled), .track-preset[aria-pressed="true"] { border-color: rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), .12); }
+.track-preset:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+.track-preset:disabled { opacity: .45; cursor: default; }
+.custom-track-label { margin: 18px 0 10px; font-size: .875rem; color: rgba(var(--v-theme-on-surface), .65); }
 .pending-track-url { font-size: .875rem; color: rgba(var(--v-theme-on-surface), .65); margin-top: 12px; }
 .track-url-form { display: flex; gap: 12px; align-items: center; }
 .track-url-form :deep(.v-input) { min-width: 0; }
