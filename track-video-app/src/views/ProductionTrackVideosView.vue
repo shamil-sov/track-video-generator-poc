@@ -6,9 +6,24 @@
         <span>Production feature</span>
       </header>
 
-      <p v-if="!apiConfigured" class="api-pending" role="status">
-        API address: <strong>TBD</strong>. You can load a track and choose its segment. Previews and generation will be available once configured.
-      </p>
+      <section class="production-panel authentication-panel" aria-labelledby="authentication-heading">
+        <h2 id="authentication-heading">API access</h2>
+        <form class="token-form" autocomplete="off" @submit.prevent="useToken">
+          <v-text-field
+            v-model="tokenInput"
+            label="BandLab bearer token"
+            type="password" autocomplete="off" :spellcheck="false"
+            :disabled="active"
+            variant="outlined" density="comfortable" hide-details
+          />
+          <v-btn type="submit" color="primary" :disabled="active || !normalizedTokenInput || normalizedTokenInput === bearerToken">Use token</v-btn>
+          <v-btn v-if="bearerToken" variant="text" :disabled="active" @click="clearToken">Clear token</v-btn>
+        </form>
+        <p class="token-note" role="status">
+          {{ bearerToken ? 'Token set for this page.' : 'A token is required for previews and video generation.' }}
+          Kept in memory only; cleared when you leave or refresh.
+        </p>
+      </section>
 
       <v-card class="production-panel" rounded="xl" elevation="0">
         <h2>Track</h2>
@@ -59,7 +74,7 @@
         <div class="template-heading">
           <h2 id="production-template-heading">Template</h2>
           <v-btn
-            v-if="track && apiConfigured"
+            v-if="track && bearerToken"
             variant="text" size="small"
             :disabled="active || previewsLoading" :loading="previewsLoading"
             @click="loadPreviews"
@@ -84,7 +99,7 @@
             />
             <div v-else class="preview-message">
               <v-icon icon="mdi-motion-play-outline" size="36" />
-              <span>{{ !track ? 'Load a track to preview templates' : !apiConfigured ? 'API address TBD' : 'Preview unavailable' }}</span>
+              <span>{{ !track ? 'Load a track to preview templates' : !bearerToken ? 'Set a BandLab token to generate previews' : 'Preview unavailable' }}</span>
             </div>
           </div>
           <div class="selected-template-copy">
@@ -174,7 +189,9 @@ import { createProductionPreviews, resolveProductionTrack, TRACK_VIDEOS_API_BASE
 import { TRACK_VIDEO_TEMPLATES, segmentDuration, segmentTime, validSegmentStart } from '@/types/productionTrackVideo'
 import type { ProductionTemplateId, ProductionTrack, ProductionTrackPreview } from '@/types/productionTrackVideo'
 
-const apiConfigured = Boolean(TRACK_VIDEOS_API_BASE_URL)
+const tokenInput = ref('')
+const bearerToken = ref('')
+const normalizedTokenInput = computed(() => tokenInput.value.trim().replace(/^Bearer(?:\s+|$)/i, '').trim())
 const trackUrlInput = ref('')
 const loadedTrackUrl = ref('')
 const exampleTrack = ref<string | null>(null)
@@ -193,7 +210,7 @@ const startTime = ref<number | string | null>(0)
 const validStart = computed(() => track.value !== null && validSegmentStart(startTime.value, track.value.durationSeconds))
 const segmentEnd = computed(() => Number(startTime.value) + segmentDuration(track.value?.durationSeconds || 0, Number(startTime.value)))
 const { job, active, submitting, error, pollingError, polling, generate, retryStatus, reset } = useProductionGeneration()
-const canGenerate = computed(() => apiConfigured && track.value && validStart.value
+const canGenerate = computed(() => bearerToken.value && track.value && validStart.value
   && trackUrlInput.value.trim() === loadedTrackUrl.value && !trackLoading.value && !active.value)
 const showGeneration = ref(false)
 const generationName = ref('')
@@ -215,6 +232,28 @@ let elapsedTimer: ReturnType<typeof setInterval> | null = null
 
 function previewFor(templateId: ProductionTemplateId): ProductionTrackPreview | undefined {
   return previews.value.find(preview => preview.templateId === templateId)
+}
+
+function clearToken(): void {
+  if (active.value) return
+  bearerToken.value = ''
+  tokenInput.value = ''
+  previewSequence += 1
+  previewController?.abort()
+  previews.value = []
+  previewsLoading.value = false
+  previewError.value = null
+  previewPlaybackError.value = null
+  stopWaiting()
+}
+
+function useToken(): void {
+  if (active.value || !normalizedTokenInput.value) return
+  const token = normalizedTokenInput.value
+  clearToken()
+  bearerToken.value = token
+  tokenInput.value = token
+  if (track.value) void loadPreviews()
 }
 
 function chooseExample(value: string): void {
@@ -245,7 +284,7 @@ async function loadTrack(url: string): Promise<void> {
     if (sequence !== trackSequence) return
     track.value = resolved
     loadedTrackUrl.value = url.trim()
-    if (apiConfigured) void loadPreviews()
+    void loadPreviews()
   } catch (cause) {
     if (sequence === trackSequence) trackError.value = cause instanceof Error ? cause.message : 'Could not load this track.'
   } finally {
@@ -254,7 +293,7 @@ async function loadTrack(url: string): Promise<void> {
 }
 
 async function loadPreviews(): Promise<void> {
-  if (!track.value || !apiConfigured || active.value) return
+  if (!track.value || !bearerToken.value || active.value) return
   const sequence = ++previewSequence
   previewController?.abort()
   previewController = new AbortController()
@@ -263,7 +302,7 @@ async function loadPreviews(): Promise<void> {
   previewError.value = null
   previewPlaybackError.value = null
   try {
-    const result = await createProductionPreviews(TRACK_VIDEOS_API_BASE_URL, track.value.pictureUrl, previewController.signal)
+    const result = await createProductionPreviews(TRACK_VIDEOS_API_BASE_URL, track.value.pictureUrl, bearerToken.value, previewController.signal)
     if (sequence === previewSequence) previews.value = result
   } catch (cause) {
     if (sequence === previewSequence) previewError.value = cause instanceof Error ? cause.message : 'Could not generate previews.'
@@ -295,7 +334,7 @@ async function generateVideo(): Promise<void> {
     trackAudioUrl: track.value.audioUrl,
     templateId: selectedTemplateId.value,
     startTimeSeconds: Number(startTime.value),
-  })
+  }, bearerToken.value)
 }
 
 async function autoplayResult(): Promise<void> {
@@ -348,6 +387,8 @@ watch(showGeneration, async visible => {
   }
 })
 onBeforeUnmount(() => {
+  bearerToken.value = ''
+  tokenInput.value = ''
   trackSequence += 1
   previewSequence += 1
   trackController?.abort()
@@ -365,9 +406,11 @@ onBeforeUnmount(() => {
 .production-heading { margin-bottom: 22px; }
 .production-heading h1 { font-size: 2rem; letter-spacing: -0.04em; }
 .production-heading > span, .session-note { color: rgba(var(--v-theme-on-surface), .55); font-size: .875rem; }
-.api-pending { padding: 14px 18px; margin-bottom: 20px; border: 1px solid rgba(var(--v-theme-on-surface), .12); border-radius: 12px; font-size: .875rem; }
 .production-panel { padding: 24px; margin-bottom: 20px; border: 1px solid rgba(var(--v-theme-on-surface), .09); background: rgb(var(--v-theme-surface)); border-radius: 20px; }
 .production-panel h2 { font-size: 1.15rem; }
+.token-form { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.token-form :deep(.v-input) { min-width: 220px; flex: 1; }
+.token-note { margin-top: 12px; color: rgba(var(--v-theme-on-surface), .65); font-size: .875rem; }
 .example-tracks { margin: 18px 0 12px; }
 .pending-track-url { font-size: .875rem; color: rgba(var(--v-theme-on-surface), .65); margin-top: 12px; }
 .track-url-form { display: flex; gap: 12px; align-items: center; }

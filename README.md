@@ -26,8 +26,14 @@ Override it locally with `VITE_API_BASE_URL`.
 ## Production Track Video feature
 
 The separate **Track videos** tab (`#/track-videos`) uses `/api/v1.3/track-videos`, not the prototype endpoints.
-Its API host is **TBD**. Set `VITE_TRACK_VIDEOS_API_BASE_URL` to the confirmed HTTPS base URL ending in `/api/v1.3`
-and rebuild to enable previews and generation. While it is unset, track loading and audio segment selection remain available.
+Its UAT base is `https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3`.
+Override it with `VITE_TRACK_VIDEOS_API_BASE_URL` (ending in `/api/v1.3`) and rebuild if needed.
+
+Enter a BandLab bearer token in the tab and choose **Use token**. The token is required for
+`POST /track-videos/previews`, `POST /track-videos/generations`, and `GET /track-videos/generations/{jobId}`.
+It is sent only in the `Authorization` header of these requests, never to the prototype API, metadata endpoints, or media URLs.
+The token stays in page memory only; it is cleared on leaving or refreshing the page and can be removed with **Clear token**.
+Do not put tokens in build configuration or commit them. Track loading and segment selection work without a token.
 
 The page uses the configured example track list and also accepts pasted BandLab track URLs. Metadata is loaded from the
 matching public BandLab environment, using the pinned revision when `revId` is present. Preview requests send only the cover;

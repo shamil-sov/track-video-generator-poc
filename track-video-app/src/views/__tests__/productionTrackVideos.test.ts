@@ -45,11 +45,18 @@ function mountPage() {
 
 async function loadTrack() {
   await wrapper.get('input[aria-label="BandLab track URL"]').setValue(track.trackUrl)
-  await wrapper.get('form').trigger('submit')
+  await wrapper.get('.track-url-form').trigger('submit')
+  await flushPromises()
+}
+
+async function useToken(value = 'test-token') {
+  await wrapper.get('input[aria-label="BandLab bearer token"]').setValue(value)
+  await wrapper.get('.token-form').trigger('submit')
   await flushPromises()
 }
 
 async function startVideo() {
+  await useToken()
   await loadTrack()
   await wrapper.findAll('.production-template-option')[1].trigger('click')
   await wrapper.get('input[aria-label="Start (seconds)"]').setValue('47.25')
@@ -67,17 +74,19 @@ beforeEach(() => {
   vi.mocked(createProductionPreviews).mockResolvedValue(previews)
   vi.mocked(startProductionGeneration).mockResolvedValue({ jobId: 'job-1', status: 'queued' })
 })
-afterEach(() => { wrapper?.unmount(); vi.restoreAllMocks(); vi.useRealTimers() })
+afterEach(() => { wrapper?.unmount(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('Production Track Video page', () => {
-  it('keeps preview and generation unavailable while the API host is TBD, but loads track and segment controls', async () => {
-    config.base = ''
+  it('masks the token and keeps it out of browser storage', async () => {
+    const saveLocal = vi.fn()
+    const saveSession = vi.fn()
+    vi.stubGlobal('localStorage', { setItem: saveLocal })
+    vi.stubGlobal('sessionStorage', { setItem: saveSession })
     mountPage()
-    await loadTrack()
-    expect(wrapper.get('.api-pending').text()).toContain('TBD')
-    expect(wrapper.get('.production-source').text()).toContain(track.name)
-    expect(wrapper.findComponent(TrackSegmentPicker).exists()).toBe(true)
-    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    await useToken()
+    expect(wrapper.get('input[aria-label="BandLab bearer token"]').attributes('type')).toBe('password')
+    expect(saveLocal).not.toHaveBeenCalled()
+    expect(saveSession).not.toHaveBeenCalled()
     expect(createProductionPreviews).not.toHaveBeenCalled()
     expect(startProductionGeneration).not.toHaveBeenCalled()
   })
@@ -88,10 +97,10 @@ describe('Production Track Video page', () => {
       .mockResolvedValueOnce(completed)
     mountPage()
     await startVideo()
-    expect(createProductionPreviews).toHaveBeenCalledWith(config.base, track.pictureUrl, expect.any(AbortSignal))
+    expect(createProductionPreviews).toHaveBeenCalledWith(config.base, track.pictureUrl, 'test-token', expect.any(AbortSignal))
     expect(startProductionGeneration).toHaveBeenCalledExactlyOnceWith(config.base, {
       trackCoverUrl: track.pictureUrl, trackAudioUrl: track.audioUrl, templateId: 'sound-wave', startTimeSeconds: 47.25,
-    }, expect.any(AbortSignal))
+    }, 'test-token', expect.any(AbortSignal))
     expect(wrapper.get('.generation-player').text()).toContain('Queued')
     await vi.advanceTimersByTimeAsync(2500)
     expect(wrapper.get('.generation-player').text()).toContain('Rendering')
@@ -103,6 +112,7 @@ describe('Production Track Video page', () => {
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalled()
     await vi.advanceTimersByTimeAsync(10000)
     expect(getProductionGeneration).toHaveBeenCalledTimes(2)
+    expect(getProductionGeneration).toHaveBeenLastCalledWith(config.base, 'job-1', 'test-token', expect.any(AbortSignal))
     expect(wrapper.get('.generation-summary').text()).toContain('0:47.25 → 0:50.25')
   })
 
@@ -130,7 +140,9 @@ describe('Production Track Video page', () => {
 
   it('requires loading an edited track URL before generating', async () => {
     mountPage()
+    await useToken()
     await loadTrack()
+    expect(wrapper.get('.production-generate').attributes()).not.toHaveProperty('disabled')
     await wrapper.get('input[aria-label="BandLab track URL"]').setValue('https://bandlab.com/track/another-track')
     expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
     expect(wrapper.get('.pending-track-url').text()).toContain('Load the updated URL')
@@ -165,7 +177,7 @@ describe('Production Track Video page', () => {
     const retry = wrapper.findAll('button').find(item => item.text() === 'Retry status check')!
     await retry.trigger('click')
     await flushPromises()
-    expect(getProductionGeneration).toHaveBeenLastCalledWith(config.base, 'job-1', expect.any(AbortSignal))
+    expect(getProductionGeneration).toHaveBeenLastCalledWith(config.base, 'job-1', 'test-token', expect.any(AbortSignal))
     expect(wrapper.get('.generation-player video').attributes('src')).toBe(completed.videoUrl)
     expect(startProductionGeneration).toHaveBeenCalledTimes(1)
   })
@@ -179,18 +191,62 @@ describe('Production Track Video page', () => {
     mountPage()
     expect(wrapper.find('.test-dialog').exists()).toBe(false)
     expect(wrapper.find('.production-source').exists()).toBe(false)
+    expect((wrapper.get('input[aria-label="BandLab bearer token"]').element as HTMLInputElement).value).toBe('')
+    await loadTrack()
+    expect(createProductionPreviews).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
   })
 
   it('ignores metadata from a previous track request that resolves late', async () => {
     let resolveOld!: (value: typeof track) => void
     vi.mocked(resolveProductionTrack).mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve }))
     mountPage()
+    await useToken()
     await wrapper.get('input[aria-label="BandLab track URL"]').setValue('older-url')
-    await wrapper.get('form').trigger('submit')
+    await wrapper.get('.track-url-form').trigger('submit')
     await loadTrack()
     resolveOld({ ...track, name: 'Old track', pictureUrl: 'old-cover.jpg' })
     await flushPromises()
     expect(wrapper.get('.production-source').text()).toContain(track.name)
-    expect(createProductionPreviews).toHaveBeenCalledExactlyOnceWith(config.base, track.pictureUrl, expect.any(AbortSignal))
+    expect(createProductionPreviews).toHaveBeenCalledExactlyOnceWith(config.base, track.pictureUrl, 'test-token', expect.any(AbortSignal))
+  })
+
+  it('allows track loading without a token and generates previews only after Use token', async () => {
+    mountPage()
+    await loadTrack()
+    expect(wrapper.get('.production-source').text()).toContain(track.name)
+    expect(createProductionPreviews).not.toHaveBeenCalled()
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    await wrapper.get('input[aria-label="BandLab bearer token"]').setValue(' Bearer test-token ')
+    expect(createProductionPreviews).not.toHaveBeenCalled()
+    await wrapper.get('.token-form').trigger('submit')
+    await flushPromises()
+    expect(createProductionPreviews).toHaveBeenCalledExactlyOnceWith(config.base, track.pictureUrl, 'test-token', expect.any(AbortSignal))
+    expect(wrapper.get('.production-generate').attributes()).not.toHaveProperty('disabled')
+  })
+
+  it('clears the token and ignores a preview response that arrives afterwards', async () => {
+    let resolvePreview!: (value: typeof previews) => void
+    vi.mocked(createProductionPreviews).mockImplementationOnce(() => new Promise(resolve => { resolvePreview = resolve }))
+    mountPage()
+    await useToken()
+    await loadTrack()
+    const signal = vi.mocked(createProductionPreviews).mock.calls[0]![3]!
+    await wrapper.findAll('button').find(item => item.text() === 'Clear token')!.trigger('click')
+    expect(signal.aborted).toBe(true)
+    resolvePreview(previews)
+    await flushPromises()
+    expect(wrapper.find('.production-preview video').exists()).toBe(false)
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    expect((wrapper.get('input[aria-label="BandLab bearer token"]').element as HTMLInputElement).value).toBe('')
+    await useToken('replacement-token')
+    expect(createProductionPreviews).toHaveBeenLastCalledWith(config.base, track.pictureUrl, 'replacement-token', expect.any(AbortSignal))
+  })
+
+  it('does not change credentials while a generation is active', async () => {
+    mountPage()
+    await startVideo()
+    expect(wrapper.get('input[aria-label="BandLab bearer token"]').attributes()).toHaveProperty('disabled')
+    expect(wrapper.findAll('button').find(item => item.text() === 'Clear token')!.attributes()).toHaveProperty('disabled')
   })
 })

@@ -13,6 +13,7 @@ export function useProductionGeneration() {
   let timer: ReturnType<typeof setTimeout> | null = null
   let controller: AbortController | null = null
   let baseUrl = ''
+  let token = ''
   let failedChecks = 0
 
   function reset(): void {
@@ -27,6 +28,8 @@ export function useProductionGeneration() {
     pollingError.value = null
     polling.value = false
     failedChecks = 0
+    baseUrl = ''
+    token = ''
   }
 
   function scheduleCheck(requestSequence: number): void {
@@ -42,7 +45,7 @@ export function useProductionGeneration() {
     controller = new AbortController()
     polling.value = true
     try {
-      const updated = await getProductionGeneration(baseUrl, job.value.jobId, controller.signal)
+      const updated = await getProductionGeneration(baseUrl, job.value.jobId, token, controller.signal)
       if (requestSequence !== sequence) return
       job.value = updated
       pollingError.value = null
@@ -71,15 +74,16 @@ export function useProductionGeneration() {
     void checkStatus(sequence)
   }
 
-  async function generate(apiBaseUrl: string, request: TrackVideoGenerationRequest): Promise<void> {
+  async function generate(apiBaseUrl: string, request: TrackVideoGenerationRequest, bearerToken: string): Promise<void> {
     if (active.value) return
     reset()
     const requestSequence = sequence
     baseUrl = apiBaseUrl
+    token = bearerToken
     controller = new AbortController()
     submitting.value = true
     try {
-      const created = await startProductionGeneration(baseUrl, request, controller.signal)
+      const created = await startProductionGeneration(baseUrl, request, token, controller.signal)
       if (requestSequence !== sequence) return
       job.value = created
       if (created.status === 'queued' || created.status === 'processing') scheduleCheck(requestSequence)

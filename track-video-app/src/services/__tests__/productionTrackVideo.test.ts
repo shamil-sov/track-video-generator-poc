@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createProductionPreviews, getProductionGeneration, normalizeTrackVideosBaseUrl,
-  resolveProductionTrack, startProductionGeneration,
+  resolveProductionTrack, startProductionGeneration, TRACK_VIDEOS_API_BASE_URL,
 } from '@/services/productionTrackVideo'
 import { segmentDuration, validSegmentStart } from '@/types/productionTrackVideo'
 
@@ -21,6 +21,7 @@ describe('Production Track Video contract', () => {
     const track = await resolveProductionTrack(`https://test.bandlab.com/track/${postId}?revId=${revisionId}`)
     expect(String(fetchMock.mock.calls[0][0])).toBe(`https://api-test.bandlab.com/v1.3/revisions/${revisionId}?edit=false`)
     expect(track).toMatchObject({ name: 'Track', artistName: 'Artist', audioUrl: revision.mixdown.file, durationSeconds: 50.25 })
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty('headers')
   })
 
   it('uses the current post revision for an unpinned production track URL', async () => {
@@ -56,17 +57,40 @@ describe('Production Track Video contract', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ jobId: 'job-id', status: 'queued' }), { status: 202 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ jobId: 'job-id', status: 'completed', templateId: 'audio-ring', videoUrl: 'video.mp4' })))
     vi.stubGlobal('fetch', fetchMock)
-    const base = 'https://api.example/api/v1.3'
+    const base = TRACK_VIDEOS_API_BASE_URL
+    expect(base).toBe('https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3')
     const request = { trackCoverUrl: revision.song.picture.url, trackAudioUrl: revision.mixdown.file, templateId: 'audio-ring' as const, startTimeSeconds: 47.25 }
-    await expect(createProductionPreviews(base, request.trackCoverUrl)).resolves.toEqual(previews)
-    await startProductionGeneration(base, request)
-    await getProductionGeneration(base, 'job-id')
+    await expect(createProductionPreviews(base, request.trackCoverUrl, ' Bearer test-token ')).resolves.toEqual(previews)
+    await startProductionGeneration(base, request, 'test-token')
+    await getProductionGeneration(base, 'job-id', 'test-token')
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       `${base}/track-videos/previews`, `${base}/track-videos/generations`, `${base}/track-videos/generations/job-id`,
     ])
     expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ trackCoverUrl: request.trackCoverUrl })
     expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual(request)
     expect(fetchMock.mock.calls[2][1]).toMatchObject({ cache: 'no-store' })
+    for (const [url, options] of fetchMock.mock.calls) {
+      expect(options.headers.Authorization).toBe('Bearer test-token')
+      expect(url).not.toContain('test-token')
+      expect(options.body || '').not.toContain('test-token')
+    }
+  })
+
+  it.each(['', '   ', 'Bearer '])('does not send production requests without a token: %j', async token => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const base = TRACK_VIDEOS_API_BASE_URL
+    await expect(createProductionPreviews(base, revision.song.picture.url, token)).rejects.toThrow('Enter a BandLab bearer token')
+    await expect(startProductionGeneration(base, {
+      trackCoverUrl: revision.song.picture.url, trackAudioUrl: revision.mixdown.file, templateId: 'audio-ring', startTimeSeconds: 0,
+    }, token)).rejects.toThrow('Enter a BandLab bearer token')
+    await expect(getProductionGeneration(base, 'job-id', token)).rejects.toThrow('Enter a BandLab bearer token')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it.each([[401, 'invalid or expired'], [403, 'Access denied']] as const)('explains authentication failure %s', async (status, message) => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status })))
+    await expect(getProductionGeneration(TRACK_VIDEOS_API_BASE_URL, 'job-id', 'test-token')).rejects.toThrow(message)
   })
 
   it('does not treat TBD as a usable API address', () => {

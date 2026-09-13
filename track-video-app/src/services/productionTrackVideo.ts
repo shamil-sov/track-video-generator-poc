@@ -5,11 +5,19 @@ import type {
   TrackVideoGenerationRequest,
 } from '@/types/productionTrackVideo'
 
-// The production-feature API host is still TBD; never send it to the prototype API implicitly.
-export const TRACK_VIDEOS_API_BASE_URL = (import.meta.env.VITE_TRACK_VIDEOS_API_BASE_URL || '').replace(/\/$/, '')
+export const TRACK_VIDEOS_API_BASE_URL = (import.meta.env.VITE_TRACK_VIDEOS_API_BASE_URL
+  || 'https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3').replace(/\/$/, '')
 
-async function readResponse<T>(response: Response): Promise<T> {
+function authorizationHeaders(bearerToken: string): Record<string, string> {
+  const token = bearerToken.trim().replace(/^Bearer(?:\s+|$)/i, '').trim()
+  if (!token) throw new Error('Enter a BandLab bearer token before requesting previews or generation.')
+  return { Authorization: `Bearer ${token}` }
+}
+
+async function readResponse<T>(response: Response, authenticated = false): Promise<T> {
   if (!response.ok) {
+    if (authenticated && response.status === 401) throw new Error('The BandLab token is invalid or expired. Enter a fresh token and try again.')
+    if (authenticated && response.status === 403) throw new Error('Access denied. Check that your BandLab token has access to this UAT API.')
     const body = await response.json().catch(() => null)
     throw new Error(body?.message || body?.errorMessage || `Request failed (${response.status}).`)
   }
@@ -105,29 +113,29 @@ export async function resolveProductionTrack(trackUrl: string, signal?: AbortSig
 }
 
 export async function createProductionPreviews(
-  apiBaseUrl: string, trackCoverUrl: string, signal?: AbortSignal,
+  apiBaseUrl: string, trackCoverUrl: string, bearerToken: string, signal?: AbortSignal,
 ): Promise<ProductionTrackPreview[]> {
   const response = await fetch(`${normalizeTrackVideosBaseUrl(apiBaseUrl)}/track-videos/previews`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...authorizationHeaders(bearerToken) },
     body: JSON.stringify({ trackCoverUrl }), cache: 'no-store', signal,
   })
-  return (await readResponse<{ items: ProductionTrackPreview[] }>(response)).items
+  return (await readResponse<{ items: ProductionTrackPreview[] }>(response, true)).items
 }
 
 export async function startProductionGeneration(
-  apiBaseUrl: string, request: TrackVideoGenerationRequest, signal?: AbortSignal,
+  apiBaseUrl: string, request: TrackVideoGenerationRequest, bearerToken: string, signal?: AbortSignal,
 ): Promise<TrackVideoGeneration> {
   return readResponse<TrackVideoGeneration>(await fetch(`${normalizeTrackVideosBaseUrl(apiBaseUrl)}/track-videos/generations`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    method: 'POST', headers: { 'Content-Type': 'application/json', ...authorizationHeaders(bearerToken) },
     body: JSON.stringify(request), cache: 'no-store', signal,
-  }))
+  }), true)
 }
 
 export async function getProductionGeneration(
-  apiBaseUrl: string, jobId: string, signal?: AbortSignal,
+  apiBaseUrl: string, jobId: string, bearerToken: string, signal?: AbortSignal,
 ): Promise<TrackVideoGeneration> {
   return readResponse<TrackVideoGeneration>(await fetch(
     `${normalizeTrackVideosBaseUrl(apiBaseUrl)}/track-videos/generations/${encodeURIComponent(jobId)}`,
-    { cache: 'no-store', signal },
-  ))
+    { headers: authorizationHeaders(bearerToken), cache: 'no-store', signal },
+  ), true)
 }
