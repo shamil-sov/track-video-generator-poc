@@ -61,7 +61,7 @@ describe('Production Track Video contract', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ jobId: 'job-id', status: 'completed', templateId: 'audio-ring', videoUrl: 'video.mp4' })))
     vi.stubGlobal('fetch', fetchMock)
     const base = TRACK_VIDEOS_API_BASE_URL
-    expect(base).toBe('https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3')
+    expect(base).toBe('https://test.aws.bandlab.com/api/v1.3')
     const request = { trackCoverUrl: revision.song.picture.url, trackAudioUrl: revision.mixdown.file, templateId: 'audio-ring' as const, startTimeSeconds: 47.25 }
     await expect(createProductionPreviews(base, request.trackCoverUrl, ' Bearer test-token ')).resolves.toEqual(previews)
     await startProductionGeneration(base, request, 'test-token')

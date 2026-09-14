@@ -6,7 +6,7 @@ import type {
 } from '@/types/productionTrackVideo'
 
 export const TRACK_VIDEOS_API_BASE_URL = (import.meta.env.VITE_TRACK_VIDEOS_API_BASE_URL
-  || 'https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3').replace(/\/$/, '')
+  || 'https://test.aws.bandlab.com/api/v1.3').replace(/\/$/, '')
 
 function authorizationHeaders(bearerToken: string): Record<string, string> {
   const token = bearerToken.trim().replace(/^Bearer(?:\s+|$)/i, '').trim()

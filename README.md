@@ -15,7 +15,7 @@ A lightweight GitHub Pages client for the experimental BandLab Track Video Gener
 - summarizes end-to-end performance separately for both workflows.
 - tests the production Track Video flow in a separate, ephemeral page with track resolution, segment selection, previews, job polling, and video download.
 
-The deployed client uses the existing UAT API Gateway for both workflows:
+The prototype sections use this UAT API base:
 
 ```text
 https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3
@@ -26,7 +26,7 @@ Override it locally with `VITE_API_BASE_URL`.
 ## Production Track Video feature
 
 The separate **Track videos** tab (`#/track-videos`) uses `/api/v1.3/track-videos`, not the prototype endpoints.
-Its UAT base is `https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3`.
+Its UAT base is `https://test.aws.bandlab.com/api/v1.3`.
 Override it with `VITE_TRACK_VIDEOS_API_BASE_URL` (ending in `/api/v1.3`) and rebuild if needed.
 
 Enter a BandLab bearer token in the tab and choose **Use token**. The token is required for
