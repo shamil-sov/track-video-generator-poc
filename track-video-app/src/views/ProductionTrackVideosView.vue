@@ -3,11 +3,23 @@
     <v-container class="page-container production-content">
       <header class="production-heading">
         <h1>Track videos</h1>
-        <span>Production feature</span>
+        <span>{{ selectedEnvironment.label }} environment</span>
       </header>
 
       <section class="production-panel authentication-panel" aria-labelledby="authentication-heading">
         <h2 id="authentication-heading">API access</h2>
+        <div class="environment-selector" role="group" aria-label="API environment">
+          <button
+            v-for="(option, key) in TRACK_VIDEO_ENVIRONMENTS" :key="key"
+            type="button" class="environment-option" :data-environment="key"
+            :aria-pressed="environment === key" :disabled="active || downloading"
+            @click="selectEnvironment(key)"
+          >{{ option.label }}</button>
+        </div>
+        <p class="api-endpoint">{{ selectedEnvironment.baseUrl }}/track-videos</p>
+        <p v-if="environment === 'production'" class="production-notice" role="status">
+          Production selected. Previews and video generation use the live service.
+        </p>
         <form class="token-form" autocomplete="off" @submit.prevent="useToken">
           <v-text-field
             v-model="tokenInput"
@@ -21,7 +33,7 @@
         </form>
         <p class="token-note" role="status">
           {{ bearerToken ? 'Token set for this page.' : 'A token is required for previews and video generation.' }}
-          Kept in memory only; cleared when you leave or refresh.
+          Use a {{ selectedEnvironment.label }} BandLab token. Kept in memory only; cleared when you switch environments, leave, or refresh.
         </p>
       </section>
 
@@ -111,7 +123,7 @@
             <v-btn
               class="production-generate" color="primary" size="large" prepend-icon="mdi-movie-open-outline"
               :disabled="!canGenerate" @click="generateVideo"
-            >Generate video</v-btn>
+            >{{ environment === 'production' ? 'Generate in Production' : 'Generate video' }}</v-btn>
             <v-btn v-if="job?.status === 'completed'" class="last-result" variant="text" @click="showGeneration = true">View generated video</v-btn>
           </div>
         </div>
@@ -185,10 +197,12 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import TrackSegmentPicker from '@/components/TrackSegmentPicker.vue'
 import { useProductionGeneration } from '@/composables/useProductionGeneration'
 import { PRODUCTION_TRACK_PRESETS } from '@/data/productionTrackPresets'
-import { createProductionPreviews, resolveProductionTrack, TRACK_VIDEOS_API_BASE_URL } from '@/services/productionTrackVideo'
+import { createProductionPreviews, resolveProductionTrack, TRACK_VIDEO_ENVIRONMENTS } from '@/services/productionTrackVideo'
 import { TRACK_VIDEO_TEMPLATES, segmentDuration, segmentTime, validSegmentStart } from '@/types/productionTrackVideo'
 import type { ProductionTemplateId, ProductionTrack, ProductionTrackPreview } from '@/types/productionTrackVideo'
 
+const environment = ref<keyof typeof TRACK_VIDEO_ENVIRONMENTS>('uat')
+const selectedEnvironment = computed(() => TRACK_VIDEO_ENVIRONMENTS[environment.value])
 const tokenInput = ref('')
 const bearerToken = ref('')
 const normalizedTokenInput = computed(() => tokenInput.value.trim().replace(/^Bearer(?:\s+|$)/i, '').trim())
@@ -230,6 +244,29 @@ let elapsedTimer: ReturnType<typeof setInterval> | null = null
 
 function previewFor(templateId: ProductionTemplateId): ProductionTrackPreview | undefined {
   return previews.value.find(preview => preview.templateId === templateId)
+}
+
+function selectEnvironment(value: keyof typeof TRACK_VIDEO_ENVIRONMENTS): void {
+  if (active.value || downloading.value || value === environment.value) return
+  templateVideo.value?.pause()
+  resultVideo.value?.pause()
+  trackSequence += 1
+  trackController?.abort()
+  clearToken()
+  track.value = null
+  trackLoading.value = false
+  trackError.value = null
+  trackUrlInput.value = ''
+  loadedTrackUrl.value = ''
+  startTime.value = 0
+  selectedTemplateId.value = 'audio-ring'
+  generationName.value = ''
+  generationSummary.value = ''
+  elapsedSeconds.value = 0
+  autoplayMuted.value = false
+  resultPlaybackError.value = null
+  downloadError.value = null
+  environment.value = value
 }
 
 function clearToken(): void {
@@ -300,7 +337,7 @@ async function loadPreviews(): Promise<void> {
   previewError.value = null
   previewPlaybackError.value = null
   try {
-    const result = await createProductionPreviews(TRACK_VIDEOS_API_BASE_URL, track.value.pictureUrl, bearerToken.value, previewController.signal)
+    const result = await createProductionPreviews(selectedEnvironment.value.baseUrl, track.value.pictureUrl, bearerToken.value, previewController.signal)
     if (sequence === previewSequence) previews.value = result
   } catch (cause) {
     if (sequence === previewSequence) previewError.value = cause instanceof Error ? cause.message : 'Could not generate previews.'
@@ -318,7 +355,7 @@ async function generateVideo(): Promise<void> {
   if (!canGenerate.value || !track.value) return
   templateVideo.value?.pause()
   generationName.value = track.value.name
-  generationSummary.value = `${selectedTemplate.value.name} · ${segmentTime(Number(startTime.value))} → ${segmentTime(segmentEnd.value)}`
+  generationSummary.value = `${selectedEnvironment.value.label} · ${selectedTemplate.value.name} · ${segmentTime(Number(startTime.value))} → ${segmentTime(segmentEnd.value)}`
   autoplayMuted.value = false
   resultPlaybackError.value = null
   downloadError.value = null
@@ -327,7 +364,7 @@ async function generateVideo(): Promise<void> {
   const started = Date.now()
   elapsedTimer = setInterval(() => { elapsedSeconds.value = Math.floor((Date.now() - started) / 1000) }, 1000)
   showGeneration.value = true
-  await generate(TRACK_VIDEOS_API_BASE_URL, {
+  await generate(selectedEnvironment.value.baseUrl, {
     trackCoverUrl: track.value.pictureUrl,
     trackAudioUrl: track.value.audioUrl,
     templateId: selectedTemplateId.value,
@@ -406,6 +443,13 @@ onBeforeUnmount(() => {
 .production-heading > span, .session-note { color: rgba(var(--v-theme-on-surface), .55); font-size: .875rem; }
 .production-panel { padding: 24px; margin-bottom: 20px; border: 1px solid rgba(var(--v-theme-on-surface), .09); background: rgb(var(--v-theme-surface)); border-radius: 20px; }
 .production-panel h2 { font-size: 1.15rem; }
+.environment-selector { display: flex; gap: 8px; margin-top: 16px; }
+.environment-option { padding: 9px 18px; border: 1px solid rgba(var(--v-theme-on-surface), .2); border-radius: 9px; font: inherit; background: transparent; color: rgb(var(--v-theme-on-surface)); cursor: pointer; }
+.environment-option[aria-pressed="true"] { border-color: rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), .15); }
+.environment-option:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 2px; }
+.environment-option:disabled { opacity: .45; cursor: default; }
+.api-endpoint { margin-top: 10px; font-family: monospace; font-size: .8rem; overflow-wrap: anywhere; color: rgba(var(--v-theme-on-surface), .65); }
+.production-notice { margin-top: 12px; padding: 10px 12px; border-left: 3px solid rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), .1); font-size: .875rem; }
 .token-form { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
 .token-form :deep(.v-input) { min-width: 220px; flex: 1; }
 .token-note { margin-top: 12px; color: rgba(var(--v-theme-on-surface), .65); font-size: .875rem; }

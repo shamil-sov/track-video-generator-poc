@@ -8,6 +8,11 @@ import type {
 export const TRACK_VIDEOS_API_BASE_URL = (import.meta.env.VITE_TRACK_VIDEOS_API_BASE_URL
   || 'https://test.aws.bandlab.com/api/v1.3').replace(/\/$/, '')
 
+export const TRACK_VIDEO_ENVIRONMENTS = {
+  uat: { label: 'UAT', baseUrl: TRACK_VIDEOS_API_BASE_URL },
+  production: { label: 'Production', baseUrl: 'https://aws.bandlab.com/api/v1.3' },
+} as const
+
 function authorizationHeaders(bearerToken: string): Record<string, string> {
   const token = bearerToken.trim().replace(/^Bearer(?:\s+|$)/i, '').trim()
   if (!token) throw new Error('Enter a BandLab bearer token before requesting previews or generation.')
@@ -17,7 +22,7 @@ function authorizationHeaders(bearerToken: string): Record<string, string> {
 async function readResponse<T>(response: Response, authenticated = false): Promise<T> {
   if (!response.ok) {
     if (authenticated && response.status === 401) throw new Error('The BandLab token is invalid or expired. Enter a fresh token and try again.')
-    if (authenticated && response.status === 403) throw new Error('Access denied. Check that your BandLab token has access to this UAT API.')
+    if (authenticated && response.status === 403) throw new Error('Access denied. Check that your BandLab token has access to the selected API environment.')
     const body = await response.json().catch(() => null)
     throw new Error(body?.message || body?.errorMessage || `Request failed (${response.status}).`)
   }

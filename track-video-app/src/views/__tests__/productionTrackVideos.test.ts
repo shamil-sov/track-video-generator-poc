@@ -10,7 +10,12 @@ import { TRACK_VIDEO_TEMPLATES } from '@/types/productionTrackVideo'
 
 const config = vi.hoisted(() => ({ base: 'https://api.example/api/v1.3' }))
 vi.mock('@/services/productionTrackVideo', () => ({
-  get TRACK_VIDEOS_API_BASE_URL() { return config.base },
+  get TRACK_VIDEO_ENVIRONMENTS() {
+    return {
+      uat: { label: 'UAT', baseUrl: config.base },
+      production: { label: 'Production', baseUrl: 'https://aws.bandlab.com/api/v1.3' },
+    }
+  },
   createProductionPreviews: vi.fn(), getProductionGeneration: vi.fn(),
   resolveProductionTrack: vi.fn(), startProductionGeneration: vi.fn(),
 }))
@@ -54,8 +59,8 @@ async function useToken(value = 'test-token') {
   await flushPromises()
 }
 
-async function startVideo() {
-  await useToken()
+async function startVideo(token = 'test-token') {
+  await useToken(token)
   await loadTrack()
   await wrapper.findAll('.production-template-option')[1].trigger('click')
   await wrapper.get('input[aria-label="Start (seconds)"]').setValue('47.25')
@@ -76,6 +81,76 @@ beforeEach(() => {
 afterEach(() => { wrapper?.unmount(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.useRealTimers() })
 
 describe('Production Track Video page', () => {
+  it('defaults to UAT, routes previews and generation to Production, and clears the result when switching back', async () => {
+    vi.mocked(getProductionGeneration).mockResolvedValue(completed)
+    mountPage()
+    expect(wrapper.get('[data-environment="uat"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.production-heading').text()).toContain('UAT environment')
+    await wrapper.get('[data-environment="production"]').trigger('click')
+    expect(wrapper.get('.production-heading').text()).toContain('Production environment')
+    expect(wrapper.get('.api-endpoint').text()).toBe('https://aws.bandlab.com/api/v1.3/track-videos')
+    expect(wrapper.get('.production-notice').text()).toContain('live service')
+    expect(wrapper.get('.token-note').text()).toContain('Use a Production BandLab token')
+    expect(createProductionPreviews).not.toHaveBeenCalled()
+    await startVideo('production-token')
+    expect(createProductionPreviews).toHaveBeenCalledExactlyOnceWith('https://aws.bandlab.com/api/v1.3', track.pictureUrl, 'production-token', expect.any(AbortSignal))
+    expect(startProductionGeneration).toHaveBeenCalledExactlyOnceWith('https://aws.bandlab.com/api/v1.3', {
+      trackCoverUrl: track.pictureUrl, trackAudioUrl: track.audioUrl, templateId: 'sound-wave', startTimeSeconds: 47.25,
+    }, 'production-token', expect.any(AbortSignal))
+    await vi.advanceTimersByTimeAsync(2500)
+    expect(getProductionGeneration).toHaveBeenCalledExactlyOnceWith('https://aws.bandlab.com/api/v1.3', 'job-1', 'production-token', expect.any(AbortSignal))
+    expect(wrapper.get('.generation-summary').text()).toContain('Production')
+    await wrapper.get('[aria-label="Close generated video"]').trigger('click')
+    await wrapper.get('[data-environment="uat"]').trigger('click')
+    expect(wrapper.get('.api-endpoint').text()).toBe(`${config.base}/track-videos`)
+    expect(wrapper.find('.production-notice').exists()).toBe(false)
+    expect(wrapper.find('.last-result').exists()).toBe(false)
+    expect(wrapper.find('.production-source').exists()).toBe(false)
+    expect(wrapper.find('.production-preview video').exists()).toBe(false)
+    expect((wrapper.get('input[aria-label="BandLab bearer token"]').element as HTMLInputElement).value).toBe('')
+    expect((wrapper.get('input[aria-label="BandLab track URL"]').element as HTMLInputElement).value).toBe('')
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(getProductionGeneration).toHaveBeenCalledTimes(1)
+  })
+
+  it('aborts old-environment previews and never reuses its token in the new environment', async () => {
+    let resolveOld!: (value: typeof previews) => void
+    vi.mocked(createProductionPreviews).mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve }))
+    mountPage()
+    await useToken('uat-token')
+    await loadTrack()
+    const signal = vi.mocked(createProductionPreviews).mock.calls[0]![3]!
+    await wrapper.get('[data-environment="production"]').trigger('click')
+    expect(signal.aborted).toBe(true)
+    resolveOld(previews)
+    await flushPromises()
+    expect(wrapper.find('.production-preview video').exists()).toBe(false)
+    await loadTrack()
+    expect(createProductionPreviews).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    await useToken('production-token')
+    expect(createProductionPreviews).toHaveBeenLastCalledWith('https://aws.bandlab.com/api/v1.3', track.pictureUrl, 'production-token', expect.any(AbortSignal))
+    expect(createProductionPreviews).toHaveBeenCalledTimes(2)
+  })
+
+  it('ignores metadata arriving after an environment switch, even with a new token set', async () => {
+    let resolveOld!: (value: typeof track) => void
+    vi.mocked(resolveProductionTrack).mockImplementationOnce(() => new Promise(resolve => { resolveOld = resolve }))
+    mountPage()
+    await useToken('uat-token')
+    await loadTrack()
+    const signal = vi.mocked(resolveProductionTrack).mock.calls[0]![1]!
+    await wrapper.get('[data-environment="production"]').trigger('click')
+    expect(signal.aborted).toBe(true)
+    await useToken('production-token')
+    resolveOld(track)
+    await flushPromises()
+    expect(wrapper.find('.production-source').exists()).toBe(false)
+    expect(wrapper.find('.track-loading').exists()).toBe(false)
+    expect(createProductionPreviews).not.toHaveBeenCalled()
+  })
+
   it('loads a named preset immediately and allows switching to a custom track URL', async () => {
     mountPage()
     await useToken()
@@ -327,5 +402,8 @@ describe('Production Track Video page', () => {
     expect(wrapper.get('input[aria-label="BandLab bearer token"]').attributes()).toHaveProperty('disabled')
     expect(wrapper.findAll('button').find(item => item.text() === 'Clear token')!.attributes()).toHaveProperty('disabled')
     expect(wrapper.get('.track-preset').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('[data-environment="production"]').attributes()).toHaveProperty('disabled')
+    await wrapper.get('[data-environment="production"]').trigger('click')
+    expect(wrapper.get('[data-environment="uat"]').attributes('aria-pressed')).toBe('true')
   })
 })

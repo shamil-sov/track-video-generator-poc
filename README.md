@@ -26,13 +26,18 @@ Override it locally with `VITE_API_BASE_URL`.
 ## Production Track Video feature
 
 The separate **Track videos** tab (`#/track-videos`) uses `/api/v1.3/track-videos`, not the prototype endpoints.
-Its UAT base is `https://test.aws.bandlab.com/api/v1.3`.
-Override it with `VITE_TRACK_VIDEOS_API_BASE_URL` (ending in `/api/v1.3`) and rebuild if needed.
+The environment selector defaults to **UAT** at `https://test.aws.bandlab.com/api/v1.3` and also supports
+**Production** at `https://aws.bandlab.com/api/v1.3`. Preview creation, generation, and job polling all use the selected base.
+Override only the UAT base with `VITE_TRACK_VIDEOS_API_BASE_URL` (ending in `/api/v1.3`) and rebuild if needed.
+The selector affects only Track videos; prototype sections continue to use their existing UAT API.
 
-Enter a BandLab bearer token in the tab and choose **Use token**. The token is required for
+Enter a BandLab bearer token for the selected environment and choose **Use token**. The token is required for
 `POST /track-videos/previews`, `POST /track-videos/generations`, and `GET /track-videos/generations/{jobId}`.
 It is sent only in the `Authorization` header of these requests, never to the prototype API, metadata endpoints, or media URLs.
 The token stays in page memory only; it is cleared on leaving or refreshing the page and can be removed with **Clear token**.
+Switching environments clears the token, track selection, previews, and current job/result. Pending track and preview
+requests are aborted and late responses ignored. Switching is disabled during generation or download; use **Stop waiting**
+to stop polling before switching if necessary. No request is sent just by selecting an environment.
 Do not put tokens in build configuration or commit them. Track loading and segment selection work without a token.
 
 The page shows 14 named track preset buttons and also accepts pasted BandLab track URLs. Selecting a preset fills its URL

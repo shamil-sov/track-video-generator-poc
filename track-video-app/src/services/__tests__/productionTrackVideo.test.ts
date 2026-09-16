@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   createProductionPreviews, getProductionGeneration, normalizeTrackVideosBaseUrl,
-  resolveProductionTrack, startProductionGeneration, TRACK_VIDEOS_API_BASE_URL,
+  resolveProductionTrack, startProductionGeneration, TRACK_VIDEOS_API_BASE_URL, TRACK_VIDEO_ENVIRONMENTS,
 } from '@/services/productionTrackVideo'
 import { segmentDuration, validSegmentStart } from '@/types/productionTrackVideo'
 
@@ -50,7 +50,10 @@ describe('Production Track Video contract', () => {
     await expect(resolveProductionTrack(`https://bandlab.com/track/${postId}?revId=${revisionId}`)).rejects.toThrow('missing a cover, playable audio, or duration')
   })
 
-  it('uses separate preview and generation contracts and polls only the returned job ID', async () => {
+  it.each([
+    ['uat', 'https://test.aws.bandlab.com/api/v1.3'],
+    ['production', 'https://aws.bandlab.com/api/v1.3'],
+  ] as const)('routes all three contracts to the %s API and polls only the returned job ID', async (environment, expectedBase) => {
     const previews = ['audio-ring', 'sound-wave', 'record-player', 'vinyl-sleeve', 'music-notes'].map(templateId => ({
       templateId, videoPreviewUrl: `https://cdn.example/${templateId}.mp4`,
       picture: { url: `https://cdn.example/${templateId}.jpg`, isDefault: false },
@@ -60,8 +63,8 @@ describe('Production Track Video contract', () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ jobId: 'job-id', status: 'queued' }), { status: 202 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ jobId: 'job-id', status: 'completed', templateId: 'audio-ring', videoUrl: 'video.mp4' })))
     vi.stubGlobal('fetch', fetchMock)
-    const base = TRACK_VIDEOS_API_BASE_URL
-    expect(base).toBe('https://test.aws.bandlab.com/api/v1.3')
+    const base = TRACK_VIDEO_ENVIRONMENTS[environment].baseUrl
+    expect(base).toBe(expectedBase)
     const request = { trackCoverUrl: revision.song.picture.url, trackAudioUrl: revision.mixdown.file, templateId: 'audio-ring' as const, startTimeSeconds: 47.25 }
     await expect(createProductionPreviews(base, request.trackCoverUrl, ' Bearer test-token ')).resolves.toEqual(previews)
     await startProductionGeneration(base, request, 'test-token')
