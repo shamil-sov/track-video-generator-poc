@@ -32,8 +32,8 @@ const buttonStub = defineComponent({
   components: { RouterLink },
   props: ['to', 'variant'],
   template: `
-    <RouterLink v-if="to" :to="to" :data-variant="variant" v-bind="$attrs"><slot /></RouterLink>
-    <button v-else :data-variant="variant" v-bind="$attrs"><slot /></button>
+    <RouterLink v-if="to" :to="to" :data-variant="variant" v-bind="$attrs"><slot name="prepend" /><slot /></RouterLink>
+    <button v-else :data-variant="variant" v-bind="$attrs"><slot name="prepend" /><slot /></button>
   `,
 })
 
@@ -132,10 +132,26 @@ describe('AI-video insights navigation', () => {
     expect(wrapper.find('.library-section').exists()).toBe(false)
     expect(wrapper.findAll('.metric-card strong').map(value => value.text())).toEqual(['30 s', '40 s'])
     expect(wrapper.findAll('tbody td').map(value => value.text())).toEqual(['Sonic Halo', '3', '30 s', '40 s'])
-    expect(wrapper.get('.app-nav [aria-label="AI-image videos"]').attributes('data-variant')).toBe('tonal')
-    expect(wrapper.get('.app-nav [aria-label="Cover videos"]').attributes('data-variant')).toBe('text')
+    expect(wrapper.get('.app-nav [aria-label="2. AI-image videos"]').attributes('data-variant')).toBe('tonal')
+    expect(wrapper.get('.app-nav [aria-label="1. Cover videos"]').attributes('data-variant')).toBe('text')
     expect(wrapper.findAll('.app-nav a')).toHaveLength(4)
     expect(wrapper.get('.ai-video-section-nav a[href="/ai-image-videos/insights"]').attributes('data-variant')).toBe('tonal')
+  })
+
+  it('gives the four main tabs stable numbered badges and accessible labels', async () => {
+    const { wrapper } = await mountPage()
+
+    const tabs = wrapper.findAll('.app-nav a')
+    expect(tabs.map(tab => ({
+      number: tab.get('.app-nav__number').text(),
+      label: tab.attributes('aria-label'),
+      href: tab.attributes('href'),
+    }))).toEqual([
+      { number: '1', label: '1. Cover videos', href: '/' },
+      { number: '2', label: '2. AI-image videos', href: '/ai-image-videos' },
+      { number: '3', label: '3. Style explorer', href: '/style-explorer' },
+      { number: '4', label: '4. Track videos — production feature', href: '/track-videos' },
+    ])
   })
 
   it('keeps generation and insights in separate sub-tabs and supports returning via history', async () => {

@@ -20,36 +20,44 @@
             :to="{ name: 'home' }"
             :variant="isCoverRoute ? 'tonal' : 'text'"
             rounded="lg"
-            prepend-icon="mdi-movie-open-outline"
-            aria-label="Cover videos"
+            aria-label="1. Cover videos"
           >
+            <template #prepend>
+              <span class="app-nav__number" aria-hidden="true">1</span>
+            </template>
             Cover videos
           </v-btn>
           <v-btn
             :to="{ name: 'ai-image-videos' }"
             :variant="route.path.startsWith('/ai-image-videos') ? 'tonal' : 'text'"
             rounded="lg"
-            prepend-icon="mdi-image-sparkles-outline"
-            aria-label="AI-image videos"
+            aria-label="2. AI-image videos"
           >
+            <template #prepend>
+              <span class="app-nav__number" aria-hidden="true">2</span>
+            </template>
             AI-image videos
           </v-btn>
           <v-btn
             :to="{ name: 'style-explorer' }"
             :variant="route.name === 'style-explorer' ? 'tonal' : 'text'"
             rounded="lg"
-            prepend-icon="mdi-palette-swatch-outline"
-            aria-label="Visual style explorer"
+            aria-label="3. Style explorer"
           >
+            <template #prepend>
+              <span class="app-nav__number" aria-hidden="true">3</span>
+            </template>
             Style explorer
           </v-btn>
           <v-btn
             :to="{ name: 'production-track-videos' }"
             :variant="route.name === 'production-track-videos' ? 'tonal' : 'text'"
             rounded="lg"
-            prepend-icon="mdi-play-box-outline"
-            aria-label="Track videos — production feature"
+            aria-label="4. Track videos — production feature"
           >
+            <template #prepend>
+              <span class="app-nav__number" aria-hidden="true">4</span>
+            </template>
             Track videos
           </v-btn>
         </nav>
@@ -191,6 +199,19 @@ const isCoverRoute = computed(() => (
   display: flex;
   gap: 5px;
   justify-self: center;
+}
+
+.app-nav__number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .app-footer {
