@@ -20,20 +20,20 @@
         <p v-if="environment === 'production'" class="production-notice" role="status">
           Production selected. Previews and video generation use the live service.
         </p>
-        <form class="token-form" autocomplete="off" @submit.prevent="useToken">
+        <div class="token-form">
           <v-text-field
-            v-model="tokenInput"
+            :model-value="tokenInput"
             label="BandLab bearer token"
             type="password" autocomplete="off" :spellcheck="false"
             :disabled="active"
             variant="outlined" density="comfortable" hide-details
+            @update:model-value="updateToken"
           />
-          <v-btn type="submit" color="primary" :disabled="active || !normalizedTokenInput || normalizedTokenInput === bearerToken">Use token</v-btn>
           <v-btn v-if="bearerToken" variant="text" :disabled="active" @click="clearToken">Clear token</v-btn>
-        </form>
+        </div>
         <p class="token-note" role="status">
           {{ bearerToken ? 'Token set for this page.' : 'A token is required for previews and video generation.' }}
-          Use a {{ selectedEnvironment.label }} BandLab token. Kept in memory only; cleared when you switch environments, leave, or refresh.
+          Use a {{ selectedEnvironment.label }} BandLab token. Applied automatically and kept in memory only; cleared when you switch environments, leave, or refresh.
         </p>
       </section>
 
@@ -205,7 +205,6 @@ const environment = ref<keyof typeof TRACK_VIDEO_ENVIRONMENTS>('uat')
 const selectedEnvironment = computed(() => TRACK_VIDEO_ENVIRONMENTS[environment.value])
 const tokenInput = ref('')
 const bearerToken = ref('')
-const normalizedTokenInput = computed(() => tokenInput.value.trim().replace(/^Bearer(?:\s+|$)/i, '').trim())
 const trackUrlInput = ref('')
 const loadedTrackUrl = ref('')
 const track = ref<ProductionTrack | null>(null)
@@ -241,6 +240,7 @@ let trackController: AbortController | null = null
 let previewController: AbortController | null = null
 let downloadController: AbortController | null = null
 let elapsedTimer: ReturnType<typeof setInterval> | null = null
+let tokenTimer: ReturnType<typeof setTimeout> | null = null
 
 function previewFor(templateId: ProductionTemplateId): ProductionTrackPreview | undefined {
   return previews.value.find(preview => preview.templateId === templateId)
@@ -271,6 +271,7 @@ function selectEnvironment(value: keyof typeof TRACK_VIDEO_ENVIRONMENTS): void {
 
 function clearToken(): void {
   if (active.value) return
+  cancelTokenApplication()
   bearerToken.value = ''
   tokenInput.value = ''
   previewSequence += 1
@@ -282,13 +283,28 @@ function clearToken(): void {
   stopWaiting()
 }
 
-function useToken(): void {
-  if (active.value || !normalizedTokenInput.value) return
-  const token = normalizedTokenInput.value
+function cancelTokenApplication(): void {
+  if (tokenTimer !== null) clearTimeout(tokenTimer)
+  tokenTimer = null
+}
+
+function updateToken(value: string | null): void {
+  if (active.value) return
+  const input = value || ''
+  const token = input.trim().replace(/^Bearer(?:\s+|$)/i, '').trim()
+  if (token === bearerToken.value && tokenTimer === null) {
+    tokenInput.value = input
+    return
+  }
   clearToken()
-  bearerToken.value = token
-  tokenInput.value = token
-  if (track.value) void loadPreviews()
+  tokenInput.value = input
+  if (!token) return
+  // Avoid rendering previews for partial tokens while the user is typing.
+  tokenTimer = setTimeout(() => {
+    tokenTimer = null
+    bearerToken.value = token
+    if (track.value) void loadPreviews()
+  }, 300)
 }
 
 function choosePreset(value: string): void {
@@ -422,6 +438,7 @@ watch(showGeneration, async visible => {
   }
 })
 onBeforeUnmount(() => {
+  cancelTokenApplication()
   bearerToken.value = ''
   tokenInput.value = ''
   trackSequence += 1

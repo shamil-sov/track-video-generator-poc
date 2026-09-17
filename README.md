@@ -31,7 +31,8 @@ The environment selector defaults to **UAT** at `https://test.aws.bandlab.com/ap
 Override only the UAT base with `VITE_TRACK_VIDEOS_API_BASE_URL` (ending in `/api/v1.3`) and rebuild if needed.
 The selector affects only Track videos; prototype sections continue to use their existing UAT API.
 
-Enter a BandLab bearer token for the selected environment and choose **Use token**. The token is required for
+Paste or enter a BandLab bearer token for the selected environment; it applies automatically after a 300 ms pause in input.
+If a track is already loaded, its previews refresh automatically. The token is required for
 `POST /track-videos/previews`, `POST /track-videos/generations`, and `GET /track-videos/generations/{jobId}`.
 It is sent only in the `Authorization` header of these requests, never to the prototype API, metadata endpoints, or media URLs.
 The token stays in page memory only; it is cleared on leaving or refreshing the page and can be removed with **Clear token**.

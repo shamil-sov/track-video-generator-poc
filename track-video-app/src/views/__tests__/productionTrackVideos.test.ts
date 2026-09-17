@@ -55,7 +55,7 @@ async function loadTrack() {
 
 async function useToken(value = 'test-token') {
   await wrapper.get('input[aria-label="BandLab bearer token"]').setValue(value)
-  await wrapper.get('.token-form').trigger('submit')
+  await vi.advanceTimersByTimeAsync(300)
   await flushPromises()
 }
 
@@ -364,7 +364,7 @@ describe('Production Track Video page', () => {
     expect(createProductionPreviews).toHaveBeenCalledExactlyOnceWith(config.base, track.pictureUrl, 'test-token', expect.any(AbortSignal))
   })
 
-  it('allows track loading without a token and generates previews only after Use token', async () => {
+  it('automatically applies a pasted token and generates previews for the loaded track', async () => {
     mountPage()
     await loadTrack()
     expect(wrapper.get('.production-source').text()).toContain(track.name)
@@ -372,10 +372,56 @@ describe('Production Track Video page', () => {
     expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
     await wrapper.get('input[aria-label="BandLab bearer token"]').setValue(' Bearer test-token ')
     expect(createProductionPreviews).not.toHaveBeenCalled()
-    await wrapper.get('.token-form').trigger('submit')
+    expect(wrapper.findAll('button').some(item => item.text() === 'Use token')).toBe(false)
+    await vi.advanceTimersByTimeAsync(300)
     await flushPromises()
     expect(createProductionPreviews).toHaveBeenCalledExactlyOnceWith(config.base, track.pictureUrl, 'test-token', expect.any(AbortSignal))
     expect(wrapper.get('.production-generate').attributes()).not.toHaveProperty('disabled')
+  })
+
+  it('waits for token edits to settle and disables generation with the previous token immediately', async () => {
+    mountPage()
+    await loadTrack()
+    await useToken('old-token')
+    vi.mocked(createProductionPreviews).mockClear()
+    const input = wrapper.get('input[aria-label="BandLab bearer token"]')
+    await input.setValue('new')
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    await vi.advanceTimersByTimeAsync(200)
+    await input.setValue('new-token')
+    await vi.advanceTimersByTimeAsync(299)
+    expect(createProductionPreviews).not.toHaveBeenCalled()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(createProductionPreviews).toHaveBeenCalledExactlyOnceWith(config.base, track.pictureUrl, 'new-token', expect.any(AbortSignal))
+    await input.setValue(' Bearer new-token ')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(createProductionPreviews).toHaveBeenCalledTimes(1)
+  })
+
+  it.each(['', ' ', 'Bearer '])('cancels pending token application when the field is cleared: %j', async value => {
+    mountPage()
+    await loadTrack()
+    const input = wrapper.get('input[aria-label="BandLab bearer token"]')
+    await input.setValue('pending-token')
+    await input.setValue(value)
+    await vi.advanceTimersByTimeAsync(500)
+    expect(createProductionPreviews).not.toHaveBeenCalled()
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+  })
+
+  it('cancels pending token application when switching environments or leaving the page', async () => {
+    mountPage()
+    await loadTrack()
+    await wrapper.get('input[aria-label="BandLab bearer token"]').setValue('uat-token')
+    await wrapper.get('[data-environment="production"]').trigger('click')
+    await vi.advanceTimersByTimeAsync(500)
+    await loadTrack()
+    expect(createProductionPreviews).not.toHaveBeenCalled()
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    await wrapper.get('input[aria-label="BandLab bearer token"]').setValue('production-token')
+    wrapper.unmount()
+    await vi.advanceTimersByTimeAsync(500)
+    expect(createProductionPreviews).not.toHaveBeenCalled()
   })
 
   it('clears the token and ignores a preview response that arrives afterwards', async () => {
