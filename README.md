@@ -18,7 +18,7 @@ A lightweight GitHub Pages client for the experimental BandLab Track Video Gener
 The prototype sections use this UAT API base:
 
 ```text
-https://yl3aoei9te.execute-api.ap-southeast-1.amazonaws.com/api/v1.3
+https://t1wtp225l0.execute-api.ap-southeast-1.amazonaws.com/api/v1.3
 ```
 
 Override it locally with `VITE_API_BASE_URL`.

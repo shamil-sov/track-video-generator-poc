@@ -21,6 +21,16 @@ describe('API client', () => {
   afterEach(() => {
     vi.restoreAllMocks()
     vi.unstubAllGlobals()
+    vi.unstubAllEnvs()
+  })
+
+  it('defaults prototype requests to the dedicated UAT gateway', async () => {
+    vi.stubEnv('VITE_API_BASE_URL', undefined)
+    vi.resetModules()
+
+    const api = await import('@/services/api')
+
+    expect(api.API_BASE_URL).toBe('https://t1wtp225l0.execute-api.ap-southeast-1.amazonaws.com/api/v1.3')
   })
 
   it('creates a cover-video job without text-overlay data', async () => {
