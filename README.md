@@ -52,6 +52,13 @@ The synchronous preview response contains five `items`, each with a `templateId`
 `picture: { url, isDefault }`. The picker uses `picture.url` for thumbnails and `videoPreviewUrl` for selected playback.
 Failed generation jobs expose their message in `error.message`.
 
+Track videos shows the client-measured time in seconds for the five-preview request and completed video generation.
+Preview timing runs until the batch response is received; video timing runs from submission until a status check reports
+completion, including queueing, network time, and polling delays (including a pause before retrying status checks).
+Both timings remain visible in the current session, and the video timing is also shown when reopening the result.
+Refreshing previews replaces only the preview timing; generating another video replaces its timing. Changing the track,
+token, or environment, or leaving or refreshing the page, clears the corresponding results and timings.
+
 The client polls only the submitted job every 2.5 seconds. Polling stops on completion or failure; after three consecutive
 status-check errors, the user can resume checking the same job without resubmitting. Leaving the page or choosing Stop waiting
 clears client state and stops polling; it does not cancel server work. No history or job ID is stored in browser storage.

@@ -93,6 +93,16 @@
           >{{ previews.length ? 'Refresh previews' : 'Generate previews' }}</v-btn>
         </div>
 
+        <div v-if="previewDurationMs !== null || generationDurationMs !== null" class="generation-timings" aria-live="polite">
+          <p v-if="previewDurationMs !== null" class="preview-timing">
+            Five previews: <strong>{{ (previewDurationMs / 1000).toFixed(2) }} seconds</strong>
+          </p>
+          <p v-if="generationDurationMs !== null" class="video-timing">
+            Video generation: <strong>{{ (generationDurationMs / 1000).toFixed(2) }} seconds</strong>
+          </p>
+          <small>Measured in this browser, including network time and video status checks.</small>
+        </div>
+
         <div class="selected-template-layout">
           <div class="production-preview">
             <div v-if="previewsLoading" class="preview-message" role="status">
@@ -173,6 +183,10 @@
           </div>
         </div>
         <p class="generation-summary">{{ generationSummary }}</p>
+        <p v-if="generationDurationMs !== null" class="completed-generation-timing">
+          Video generation: <strong>{{ (generationDurationMs / 1000).toFixed(2) }} seconds</strong>
+          <span>From submission to completion detected by this browser.</span>
+        </p>
         <p v-if="job" class="job-reference">Job: {{ job.jobId }}</p>
         <v-alert v-if="pollingError" type="warning" variant="tonal" class="inline-alert">
           {{ pollingError }} {{ polling ? 'Retrying status check…' : 'Resume checking this job below.' }}
@@ -212,6 +226,7 @@ const trackLoading = ref(false)
 const trackError = ref<string | null>(null)
 const previews = ref<ProductionTrackPreview[]>([])
 const previewsLoading = ref(false)
+const previewDurationMs = ref<number | null>(null)
 const previewError = ref<string | null>(null)
 const previewPlaybackError = ref<string | null>(null)
 const selectedTemplateId = ref<ProductionTemplateId>('audio-ring')
@@ -220,7 +235,7 @@ const selectedPreview = computed(() => previewFor(selectedTemplateId.value))
 const startTime = ref<number | string | null>(0)
 const validStart = computed(() => track.value !== null && validSegmentStart(startTime.value, track.value.durationSeconds))
 const segmentEnd = computed(() => Number(startTime.value) + segmentDuration(track.value?.durationSeconds || 0, Number(startTime.value)))
-const { job, active, submitting, error, pollingError, polling, generate, retryStatus, reset } = useProductionGeneration()
+const { job, active, submitting, error, pollingError, polling, generationDurationMs, generate, retryStatus, reset } = useProductionGeneration()
 const canGenerate = computed(() => bearerToken.value && track.value && validStart.value
   && trackUrlInput.value.trim() === loadedTrackUrl.value && !trackLoading.value && !active.value)
 const showGeneration = ref(false)
@@ -278,6 +293,7 @@ function clearToken(): void {
   previewController?.abort()
   previews.value = []
   previewsLoading.value = false
+  previewDurationMs.value = null
   previewError.value = null
   previewPlaybackError.value = null
   stopWaiting()
@@ -324,6 +340,7 @@ async function loadTrack(url: string): Promise<void> {
   track.value = null
   previews.value = []
   previewsLoading.value = false
+  previewDurationMs.value = null
   trackError.value = null
   previewError.value = null
   previewPlaybackError.value = null
@@ -350,11 +367,16 @@ async function loadPreviews(): Promise<void> {
   previewController = new AbortController()
   previews.value = []
   previewsLoading.value = true
+  previewDurationMs.value = null
   previewError.value = null
   previewPlaybackError.value = null
+  const started = performance.now()
   try {
     const result = await createProductionPreviews(selectedEnvironment.value.baseUrl, track.value.pictureUrl, bearerToken.value, previewController.signal)
-    if (sequence === previewSequence) previews.value = result
+    if (sequence === previewSequence) {
+      previews.value = result
+      previewDurationMs.value = performance.now() - started
+    }
   } catch (cause) {
     if (sequence === previewSequence) previewError.value = cause instanceof Error ? cause.message : 'Could not generate previews.'
   } finally {
@@ -486,6 +508,11 @@ onBeforeUnmount(() => {
 .production-source p, .production-source span { color: rgba(var(--v-theme-on-surface), .6); font-size: .875rem; }
 .source-segment { margin-top: 24px; padding-top: 24px; border-top: 1px solid rgba(var(--v-theme-on-surface), .09); }
 .selected-template-layout { display: grid; grid-template-columns: minmax(180px, 260px) minmax(0, 1fr); align-items: center; gap: 40px; max-width: 750px; margin: 22px auto; }
+.generation-timings { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 14px; font-size: .875rem; }
+.generation-timings strong, .completed-generation-timing strong { font-variant-numeric: tabular-nums; }
+.generation-timings small { flex-basis: 100%; color: rgba(var(--v-theme-on-surface), .6); }
+.completed-generation-timing { margin-top: 12px; font-size: .875rem; }
+.completed-generation-timing span { display: block; margin-top: 4px; font-size: .75rem; color: rgba(var(--v-theme-on-surface), .6); }
 .production-preview, .generation-player { aspect-ratio: 9 / 16; background: #08090c; overflow: hidden; border-radius: 15px; }
 .production-preview video, .generation-player video { display: block; width: 100%; height: 100%; object-fit: contain; }
 .preview-message { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; height: 100%; padding: 24px; font-size: .875rem; color: rgba(var(--v-theme-on-surface), .65); }

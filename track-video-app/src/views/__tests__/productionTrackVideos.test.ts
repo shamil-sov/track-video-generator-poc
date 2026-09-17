@@ -107,6 +107,7 @@ describe('Production Track Video page', () => {
     expect(wrapper.find('.last-result').exists()).toBe(false)
     expect(wrapper.find('.production-source').exists()).toBe(false)
     expect(wrapper.find('.production-preview video').exists()).toBe(false)
+    expect(wrapper.find('.generation-timings').exists()).toBe(false)
     expect((wrapper.get('input[aria-label="BandLab bearer token"]').element as HTMLInputElement).value).toBe('')
     expect((wrapper.get('input[aria-label="BandLab track URL"]').element as HTMLInputElement).value).toBe('')
     expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
@@ -126,6 +127,7 @@ describe('Production Track Video page', () => {
     resolveOld(previews)
     await flushPromises()
     expect(wrapper.find('.production-preview video').exists()).toBe(false)
+    expect(wrapper.find('.preview-timing').exists()).toBe(false)
     await loadTrack()
     expect(createProductionPreviews).toHaveBeenCalledTimes(1)
     expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
@@ -247,6 +249,94 @@ describe('Production Track Video page', () => {
     expect(wrapper.get('.generation-summary').text()).toContain('0:47.25 → 0:50.25')
   })
 
+  it('measures the whole preview batch in seconds and replaces its timing on refresh', async () => {
+    vi.mocked(createProductionPreviews).mockImplementationOnce(() => new Promise(resolve => {
+      setTimeout(() => resolve(previews), 1250)
+    }))
+    mountPage()
+    await useToken()
+    await loadTrack()
+    expect(wrapper.find('.preview-timing').exists()).toBe(false)
+    await vi.advanceTimersByTimeAsync(1250)
+    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 1.25 seconds')
+    await wrapper.findAll('.production-template-option')[1]!.trigger('click')
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 1.25 seconds')
+
+    vi.mocked(createProductionPreviews).mockImplementationOnce(() => new Promise(resolve => {
+      setTimeout(() => resolve(previews), 350)
+    }))
+    await wrapper.get('.template-heading button').trigger('click')
+    expect(wrapper.find('.preview-timing').exists()).toBe(false)
+    await vi.advanceTimersByTimeAsync(350)
+    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 0.35 seconds')
+
+    vi.mocked(createProductionPreviews).mockRejectedValueOnce(new Error('Preview rendering failed'))
+    await wrapper.get('.template-heading button').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('.preview-timing').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Preview rendering failed')
+  })
+
+  it('retains both timings after generation and reopening, includes submission latency, and times a fresh run separately', async () => {
+    vi.mocked(createProductionPreviews).mockImplementationOnce(() => new Promise(resolve => {
+      setTimeout(() => resolve(previews), 1250)
+    }))
+    vi.mocked(startProductionGeneration).mockImplementationOnce(() => new Promise(resolve => {
+      setTimeout(() => resolve({ jobId: 'job-1', status: 'queued' }), 800)
+    }))
+    vi.mocked(getProductionGeneration).mockImplementationOnce(() => new Promise(resolve => {
+      setTimeout(() => resolve(completed), 600)
+    }))
+    mountPage()
+    await useToken()
+    await loadTrack()
+    await vi.advanceTimersByTimeAsync(1250)
+    await wrapper.get('.production-generate').trigger('click')
+    expect(wrapper.find('.video-timing').exists()).toBe(false)
+    await vi.advanceTimersByTimeAsync(3900)
+    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 1.25 seconds')
+    expect(wrapper.get('.video-timing').text()).toBe('Video generation: 3.90 seconds')
+    expect(wrapper.get('.completed-generation-timing').text()).toContain('3.90 seconds')
+    await wrapper.get('[aria-label="Close generated video"]').trigger('click')
+    await wrapper.findAll('.production-template-option')[1]!.trigger('click')
+    await vi.advanceTimersByTimeAsync(10000)
+    expect(wrapper.get('.video-timing').text()).toBe('Video generation: 3.90 seconds')
+    await wrapper.get('.last-result').trigger('click')
+    expect(wrapper.get('.completed-generation-timing').text()).toContain('3.90 seconds')
+    await wrapper.get('[aria-label="Close generated video"]').trigger('click')
+
+    vi.mocked(getProductionGeneration).mockResolvedValue(completed)
+    await wrapper.get('.production-generate').trigger('click')
+    expect(wrapper.find('.video-timing').exists()).toBe(false)
+    expect(wrapper.find('.completed-generation-timing').exists()).toBe(false)
+    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 1.25 seconds')
+    await vi.advanceTimersByTimeAsync(2500)
+    expect(wrapper.get('.video-timing').text()).toBe('Video generation: 2.50 seconds')
+    await wrapper.get('[aria-label="Close generated video"]').trigger('click')
+
+    let resolveNew!: (value: typeof track) => void
+    vi.mocked(resolveProductionTrack).mockImplementationOnce(() => new Promise(resolve => { resolveNew = resolve }))
+    await loadTrack()
+    expect(wrapper.find('.generation-timings').exists()).toBe(false)
+    resolveNew(track)
+    await flushPromises()
+  })
+
+  it('does not report a completed generation time after stopping or a late completion', async () => {
+    let finishJob!: (value: typeof completed) => void
+    vi.mocked(getProductionGeneration).mockImplementationOnce(() => new Promise(resolve => { finishJob = resolve }))
+    mountPage()
+    await startVideo()
+    await vi.advanceTimersByTimeAsync(2500)
+    await wrapper.findAll('button').find(item => item.text() === 'Stop waiting')!.trigger('click')
+    finishJob(completed)
+    await flushPromises()
+    expect(wrapper.find('.video-timing').exists()).toBe(false)
+    expect(wrapper.find('.test-dialog').exists()).toBe(false)
+    expect(wrapper.find('.preview-timing').exists()).toBe(true)
+  })
+
   it('displays the nested job failure and stops polling', async () => {
     vi.mocked(getProductionGeneration).mockResolvedValue({ jobId: 'job-1', status: 'failed', error: { message: 'Audio download failed.' } })
     mountPage()
@@ -255,6 +345,8 @@ describe('Production Track Video page', () => {
     expect(wrapper.get('.generation-player').text()).toContain('Audio download failed.')
     expect(wrapper.get('.generation-heading h2').text()).toBe('Generation failed')
     expect(getProductionGeneration).toHaveBeenCalledTimes(1)
+    expect(wrapper.find('.video-timing').exists()).toBe(false)
+    expect(wrapper.find('.completed-generation-timing').exists()).toBe(false)
   })
 
   it('shows all five picture thumbnails and switches the selected preview by template ID', async () => {
@@ -333,6 +425,7 @@ describe('Production Track Video page', () => {
     expect(getProductionGeneration).toHaveBeenLastCalledWith(config.base, 'job-1', 'test-token', expect.any(AbortSignal))
     expect(wrapper.get('.generation-player video').attributes('src')).toBe(completed.videoUrl)
     expect(startProductionGeneration).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('.video-timing').text()).toBe('Video generation: 10.00 seconds')
   })
 
   it('stops polling when leaving and starts a fresh session when remounted', async () => {
@@ -344,6 +437,7 @@ describe('Production Track Video page', () => {
     mountPage()
     expect(wrapper.find('.test-dialog').exists()).toBe(false)
     expect(wrapper.find('.production-source').exists()).toBe(false)
+    expect(wrapper.find('.generation-timings').exists()).toBe(false)
     expect((wrapper.get('input[aria-label="BandLab bearer token"]').element as HTMLInputElement).value).toBe('')
     await loadTrack()
     expect(createProductionPreviews).toHaveBeenCalledTimes(1)
@@ -436,6 +530,7 @@ describe('Production Track Video page', () => {
     resolvePreview(previews)
     await flushPromises()
     expect(wrapper.find('.production-preview video').exists()).toBe(false)
+    expect(wrapper.find('.preview-timing').exists()).toBe(false)
     expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
     expect((wrapper.get('input[aria-label="BandLab bearer token"]').element as HTMLInputElement).value).toBe('')
     await useToken('replacement-token')

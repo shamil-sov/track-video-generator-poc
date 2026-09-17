@@ -8,6 +8,7 @@ export function useProductionGeneration() {
   const error = ref<string | null>(null)
   const pollingError = ref<string | null>(null)
   const polling = ref(false)
+  const generationDurationMs = ref<number | null>(null)
   const active = computed(() => submitting.value || job.value?.status === 'queued' || job.value?.status === 'processing')
   let sequence = 0
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -15,6 +16,7 @@ export function useProductionGeneration() {
   let baseUrl = ''
   let token = ''
   let failedChecks = 0
+  let startedAt = 0
 
   function reset(): void {
     sequence += 1
@@ -28,6 +30,8 @@ export function useProductionGeneration() {
     pollingError.value = null
     polling.value = false
     failedChecks = 0
+    generationDurationMs.value = null
+    startedAt = 0
     baseUrl = ''
     token = ''
   }
@@ -54,6 +58,7 @@ export function useProductionGeneration() {
         scheduleCheck(requestSequence)
       } else {
         polling.value = false
+        if (updated.status === 'completed') generationDurationMs.value = performance.now() - startedAt
       }
     } catch (cause) {
       if (requestSequence !== sequence) return
@@ -82,6 +87,7 @@ export function useProductionGeneration() {
     token = bearerToken
     controller = new AbortController()
     submitting.value = true
+    startedAt = performance.now()
     try {
       const created = await startProductionGeneration(baseUrl, request, token, controller.signal)
       if (requestSequence !== sequence) return
@@ -96,5 +102,5 @@ export function useProductionGeneration() {
   }
 
   onBeforeUnmount(reset)
-  return { job, active, submitting, error, pollingError, polling, generate, retryStatus, reset }
+  return { job, active, submitting, error, pollingError, polling, generationDurationMs, generate, retryStatus, reset }
 }
