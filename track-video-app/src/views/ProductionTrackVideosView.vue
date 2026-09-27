@@ -95,7 +95,7 @@
 
         <div v-if="previewDurationMs !== null || generationDurationMs !== null" class="generation-timings" aria-live="polite">
           <p v-if="previewDurationMs !== null" class="preview-timing">
-            Five previews: <strong>{{ (previewDurationMs / 1000).toFixed(2) }} seconds</strong>
+            {{ previews.length }} {{ previews.length === 1 ? 'preview' : 'previews' }}: <strong>{{ (previewDurationMs / 1000).toFixed(2) }} seconds</strong>
           </p>
           <p v-if="generationDurationMs !== null" class="video-timing">
             Video generation: <strong>{{ (generationDurationMs / 1000).toFixed(2) }} seconds</strong>
@@ -107,7 +107,7 @@
           <div class="production-preview">
             <div v-if="previewsLoading" class="preview-message" role="status">
               <v-progress-circular indeterminate color="primary" />
-              <span>Generating five previews…</span>
+              <span>Generating template previews…</span>
             </div>
             <video
               v-else-if="selectedPreview"
@@ -116,7 +116,7 @@
               :src="selectedPreview.videoPreviewUrl"
               :poster="selectedPreview.picture.url"
               :autoplay="!showGeneration" muted loop playsinline controls
-              :aria-label="`${selectedTemplate.name} template preview`"
+              :aria-label="`${selectedTemplateName} template preview`"
               @error="previewPlaybackError = 'This preview could not be played. Try refreshing the previews.'"
             />
             <div v-else class="preview-message">
@@ -126,7 +126,7 @@
           </div>
           <div class="selected-template-copy">
             <span class="selected-label">Selected template</span>
-            <h3>{{ selectedTemplate.name }}</h3>
+            <h3>{{ selectedTemplateName }}</h3>
             <p>Video: 720 × 1280 · 24 FPS</p>
             <p v-if="track && validStart">Segment: {{ segmentTime(Number(startTime)) }} → {{ segmentTime(segmentEnd) }}</p>
             <p class="preview-note">Template previews are silent. The generated video includes your selected audio segment.</p>
@@ -141,21 +141,17 @@
         <v-alert v-if="previewError || previewPlaybackError" type="error" variant="tonal" class="inline-alert">
           {{ previewError || previewPlaybackError }}
         </v-alert>
-        <div class="production-template-options" role="group" aria-label="Video templates">
+        <div v-if="previews.length" class="production-template-options" role="group" aria-label="Video templates">
           <button
-            v-for="template in TRACK_VIDEO_TEMPLATES" :key="template.id"
+            v-for="preview in previews" :key="preview.templateId"
             type="button" class="production-template-option"
-            :class="{ 'production-template-option--selected': selectedTemplateId === template.id }"
-            :aria-pressed="selectedTemplateId === template.id" :disabled="active"
-            @click="selectedTemplateId = template.id; previewPlaybackError = null"
+            :class="{ 'production-template-option--selected': selectedTemplateId === preview.templateId }"
+            :aria-pressed="selectedTemplateId === preview.templateId" :disabled="active"
+            @click="selectedTemplateId = preview.templateId; previewPlaybackError = null"
           >
-            <img
-              v-if="previewFor(template.id) && !previewsLoading"
-              :src="previewFor(template.id)!.picture.url" :alt="`${template.name} preview`"
-            />
-            <div v-else class="template-placeholder"><v-icon icon="mdi-movie-outline" size="24" /></div>
-            <span>{{ template.name }}</span>
-            <v-icon v-if="selectedTemplateId === template.id" class="template-check" icon="mdi-check-circle" size="20" />
+            <img :src="preview.picture.url" :alt="`${templateName(preview.templateId)} preview`" />
+            <span>{{ templateName(preview.templateId) }}</span>
+            <v-icon v-if="selectedTemplateId === preview.templateId" class="template-check" icon="mdi-check-circle" size="20" />
           </button>
         </div>
       </section>
@@ -212,7 +208,7 @@ import TrackSegmentPicker from '@/components/TrackSegmentPicker.vue'
 import { useProductionGeneration } from '@/composables/useProductionGeneration'
 import { PRODUCTION_TRACK_PRESETS } from '@/data/productionTrackPresets'
 import { createProductionPreviews, resolveProductionTrack, TRACK_VIDEO_ENVIRONMENTS } from '@/services/productionTrackVideo'
-import { TRACK_VIDEO_TEMPLATES, segmentDuration, segmentTime, validSegmentStart } from '@/types/productionTrackVideo'
+import { segmentDuration, segmentTime, templateName, validSegmentStart } from '@/types/productionTrackVideo'
 import type { ProductionTemplateId, ProductionTrack, ProductionTrackPreview } from '@/types/productionTrackVideo'
 
 const environment = ref<keyof typeof TRACK_VIDEO_ENVIRONMENTS>('uat')
@@ -229,14 +225,15 @@ const previewsLoading = ref(false)
 const previewDurationMs = ref<number | null>(null)
 const previewError = ref<string | null>(null)
 const previewPlaybackError = ref<string | null>(null)
-const selectedTemplateId = ref<ProductionTemplateId>('audio-ring')
-const selectedTemplate = computed(() => TRACK_VIDEO_TEMPLATES.find(template => template.id === selectedTemplateId.value)!)
-const selectedPreview = computed(() => previewFor(selectedTemplateId.value))
+const selectedTemplateId = ref<ProductionTemplateId | null>(null)
+const selectedPreview = computed(() => previews.value.find(preview => preview.templateId === selectedTemplateId.value))
+const selectedTemplateName = computed(() => selectedPreview.value ? templateName(selectedPreview.value.templateId) : 'Choose a template')
 const startTime = ref<number | string | null>(0)
 const validStart = computed(() => track.value !== null && validSegmentStart(startTime.value, track.value.durationSeconds))
 const segmentEnd = computed(() => Number(startTime.value) + segmentDuration(track.value?.durationSeconds || 0, Number(startTime.value)))
 const { job, active, submitting, error, pollingError, polling, generationDurationMs, generate, retryStatus, reset } = useProductionGeneration()
 const canGenerate = computed(() => bearerToken.value && track.value && validStart.value
+  && selectedPreview.value && !previewsLoading.value
   && trackUrlInput.value.trim() === loadedTrackUrl.value && !trackLoading.value && !active.value)
 const showGeneration = ref(false)
 const generationName = ref('')
@@ -257,10 +254,6 @@ let downloadController: AbortController | null = null
 let elapsedTimer: ReturnType<typeof setInterval> | null = null
 let tokenTimer: ReturnType<typeof setTimeout> | null = null
 
-function previewFor(templateId: ProductionTemplateId): ProductionTrackPreview | undefined {
-  return previews.value.find(preview => preview.templateId === templateId)
-}
-
 function selectEnvironment(value: keyof typeof TRACK_VIDEO_ENVIRONMENTS): void {
   if (active.value || downloading.value || value === environment.value) return
   templateVideo.value?.pause()
@@ -274,7 +267,6 @@ function selectEnvironment(value: keyof typeof TRACK_VIDEO_ENVIRONMENTS): void {
   trackUrlInput.value = ''
   loadedTrackUrl.value = ''
   startTime.value = 0
-  selectedTemplateId.value = 'audio-ring'
   generationName.value = ''
   generationSummary.value = ''
   elapsedSeconds.value = 0
@@ -292,6 +284,7 @@ function clearToken(): void {
   previewSequence += 1
   previewController?.abort()
   previews.value = []
+  selectedTemplateId.value = null
   previewsLoading.value = false
   previewDurationMs.value = null
   previewError.value = null
@@ -339,6 +332,7 @@ async function loadTrack(url: string): Promise<void> {
   trackLoading.value = true
   track.value = null
   previews.value = []
+  selectedTemplateId.value = null
   previewsLoading.value = false
   previewDurationMs.value = null
   trackError.value = null
@@ -375,6 +369,10 @@ async function loadPreviews(): Promise<void> {
     const result = await createProductionPreviews(selectedEnvironment.value.baseUrl, track.value.pictureUrl, bearerToken.value, previewController.signal)
     if (sequence === previewSequence) {
       previews.value = result
+      if (!result.some(preview => preview.templateId === selectedTemplateId.value)) {
+        selectedTemplateId.value = result[0]?.templateId ?? null
+      }
+      if (!result.length) previewError.value = 'The API returned no template previews. Try generating previews again.'
       previewDurationMs.value = performance.now() - started
     }
   } catch (cause) {
@@ -390,10 +388,10 @@ function clearElapsedTimer(): void {
 }
 
 async function generateVideo(): Promise<void> {
-  if (!canGenerate.value || !track.value) return
+  if (!canGenerate.value || !track.value || !selectedPreview.value) return
   templateVideo.value?.pause()
   generationName.value = track.value.name
-  generationSummary.value = `${selectedEnvironment.value.label} · ${selectedTemplate.value.name} · ${segmentTime(Number(startTime.value))} → ${segmentTime(segmentEnd.value)}`
+  generationSummary.value = `${selectedEnvironment.value.label} · ${selectedTemplateName.value} · ${segmentTime(Number(startTime.value))} → ${segmentTime(segmentEnd.value)}`
   autoplayMuted.value = false
   resultPlaybackError.value = null
   downloadError.value = null
@@ -405,7 +403,7 @@ async function generateVideo(): Promise<void> {
   await generate(selectedEnvironment.value.baseUrl, {
     trackCoverUrl: track.value.pictureUrl,
     trackAudioUrl: track.value.audioUrl,
-    templateId: selectedTemplateId.value,
+    templateId: selectedPreview.value.templateId,
     startTimeSeconds: Number(startTime.value),
   }, bearerToken.value)
 }
@@ -521,13 +519,12 @@ onBeforeUnmount(() => {
 .selected-template-copy p { color: rgba(var(--v-theme-on-surface), .6); font-size: .875rem; margin: 9px 0; }
 .selected-template-copy .preview-note { margin: 22px 0; line-height: 1.6; }
 .production-generate, .last-result { width: 100%; }
-.production-template-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 25px; }
+.production-template-options { display: grid; grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); gap: 12px; margin-top: 25px; }
 .production-template-option { position: relative; padding: 8px; border: 1px solid rgba(var(--v-theme-on-surface), .14); border-radius: 13px; text-align: left; background: rgba(var(--v-theme-on-surface), .02); }
 .production-template-option:not(:disabled) { cursor: pointer; }
 .production-template-option:focus-visible { outline: 2px solid rgb(var(--v-theme-primary)); outline-offset: 3px; }
 .production-template-option--selected { border-color: rgb(var(--v-theme-primary)); background: rgba(var(--v-theme-primary), .08); }
-.production-template-option img, .template-placeholder { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 8px; background: #0c0d11; }
-.template-placeholder { display: grid; place-items: center; color: rgba(var(--v-theme-on-surface), .3); }
+.production-template-option img { display: block; width: 100%; aspect-ratio: 9 / 16; object-fit: cover; border-radius: 8px; background: #0c0d11; }
 .production-template-option > span { display: block; font-size: .875rem; margin: 10px 2px 3px; }
 .template-check { position: absolute; right: 13px; top: 13px; color: rgb(var(--v-theme-primary)); background: #101116; border-radius: 50%; }
 .inline-alert { margin: 18px 0; }

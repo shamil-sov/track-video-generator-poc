@@ -1,12 +1,9 @@
-export const TRACK_VIDEO_TEMPLATES = [
-  { id: 'audio-ring', name: 'Audio Ring' },
-  { id: 'sound-wave', name: 'Sound Wave' },
-  { id: 'record-player', name: 'Record Player' },
-  { id: 'vinyl-sleeve', name: 'Vinyl Sleeve' },
-  { id: 'music-notes', name: 'Music Notes' },
-] as const
+// The preview API supplies template IDs; new IDs do not require a client release.
+export type ProductionTemplateId = string
 
-export type ProductionTemplateId = typeof TRACK_VIDEO_TEMPLATES[number]['id']
+export function templateName(templateId: ProductionTemplateId): string {
+  return templateId.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
+}
 
 export interface ProductionTrack {
   trackUrl: string

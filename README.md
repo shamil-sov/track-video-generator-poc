@@ -48,11 +48,15 @@ generation requests send the cover, audio, selected template ID, and fractional 
 or the remaining audio duration, whichever is shorter.
 The segment picker highlights this window, prominently shows its duration, and explains when fewer than 15 seconds remain.
 
-The synchronous preview response contains five `items`, each with a `templateId`, `videoPreviewUrl`, and
+The synchronous preview response contains `items`, each with a `templateId`, `videoPreviewUrl`, and
 `picture: { url, isDefault }`. The picker uses `picture.url` for thumbnails and `videoPreviewUrl` for selected playback.
+The returned items define the available templates and their order; there is no client-side template list or fixed count.
+Labels are derived from the template IDs because this API does not return display names. IDs are submitted unchanged.
+The first returned template is selected automatically. Refreshing previews keeps the selection if it is still available,
+otherwise the first returned template is selected. Generation requires a template from the current successful response.
 Failed generation jobs expose their message in `error.message`.
 
-Track videos shows the client-measured time in seconds for the five-preview request and completed video generation.
+Track videos shows the returned preview count and client-measured time in seconds for the batch request and completed video generation.
 Preview timing runs until the batch response is received; video timing runs from submission until a status check reports
 completion, including queueing, network time, and polling delays (including a pause before retrying status checks).
 Both timings remain visible in the current session, and the video timing is also shown when reopening the result.

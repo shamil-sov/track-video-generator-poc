@@ -6,7 +6,6 @@ import ProductionTrackVideosView from '@/views/ProductionTrackVideosView.vue'
 import TrackSegmentPicker from '@/components/TrackSegmentPicker.vue'
 import { PRODUCTION_TRACK_PRESETS } from '@/data/productionTrackPresets'
 import { createProductionPreviews, getProductionGeneration, resolveProductionTrack, startProductionGeneration } from '@/services/productionTrackVideo'
-import { TRACK_VIDEO_TEMPLATES } from '@/types/productionTrackVideo'
 
 const config = vi.hoisted(() => ({ base: 'https://api.example/api/v1.3' }))
 vi.mock('@/services/productionTrackVideo', () => ({
@@ -33,8 +32,8 @@ const track = {
   trackUrl: 'https://bandlab.com/track/8398d42e-0504-40c6-b882-bbf42294c641', postId: 'post-id', revisionId: 'revision-id',
   name: 'Blue Ridge Mountains', artistName: 'Artist', pictureUrl: 'https://cdn.example/cover.jpg', audioUrl: 'https://cdn.example/audio.m4a', durationSeconds: 50.25,
 }
-const previews = TRACK_VIDEO_TEMPLATES.map(template => ({
-  templateId: template.id, videoPreviewUrl: `${template.id}.mp4`, picture: { url: `${template.id}.jpg`, isDefault: false },
+const previews = ['audio-ring', 'sound-wave', 'record-player', 'music-notes', 'vinyl-sleeve', 'vinyl-sleeve-2', 'vinyl-sleeve-3'].map(templateId => ({
+  templateId, videoPreviewUrl: `${templateId}.mp4`, picture: { url: `${templateId}.jpg`, isDefault: false },
 }))
 const completed = { jobId: 'job-1', status: 'completed' as const, templateId: 'sound-wave' as const, videoUrl: 'https://cdn.example/result.mp4' }
 let wrapper: ReturnType<typeof mount>
@@ -258,10 +257,10 @@ describe('Production Track Video page', () => {
     await loadTrack()
     expect(wrapper.find('.preview-timing').exists()).toBe(false)
     await vi.advanceTimersByTimeAsync(1250)
-    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 1.25 seconds')
+    expect(wrapper.get('.preview-timing').text()).toBe('7 previews: 1.25 seconds')
     await wrapper.findAll('.production-template-option')[1]!.trigger('click')
     await vi.advanceTimersByTimeAsync(10000)
-    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 1.25 seconds')
+    expect(wrapper.get('.preview-timing').text()).toBe('7 previews: 1.25 seconds')
 
     vi.mocked(createProductionPreviews).mockImplementationOnce(() => new Promise(resolve => {
       setTimeout(() => resolve(previews), 350)
@@ -269,7 +268,7 @@ describe('Production Track Video page', () => {
     await wrapper.get('.template-heading button').trigger('click')
     expect(wrapper.find('.preview-timing').exists()).toBe(false)
     await vi.advanceTimersByTimeAsync(350)
-    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 0.35 seconds')
+    expect(wrapper.get('.preview-timing').text()).toBe('7 previews: 0.35 seconds')
 
     vi.mocked(createProductionPreviews).mockRejectedValueOnce(new Error('Preview rendering failed'))
     await wrapper.get('.template-heading button').trigger('click')
@@ -295,7 +294,7 @@ describe('Production Track Video page', () => {
     await wrapper.get('.production-generate').trigger('click')
     expect(wrapper.find('.video-timing').exists()).toBe(false)
     await vi.advanceTimersByTimeAsync(3900)
-    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 1.25 seconds')
+    expect(wrapper.get('.preview-timing').text()).toBe('7 previews: 1.25 seconds')
     expect(wrapper.get('.video-timing').text()).toBe('Video generation: 3.90 seconds')
     expect(wrapper.get('.completed-generation-timing').text()).toContain('3.90 seconds')
     await wrapper.get('[aria-label="Close generated video"]').trigger('click')
@@ -310,7 +309,7 @@ describe('Production Track Video page', () => {
     await wrapper.get('.production-generate').trigger('click')
     expect(wrapper.find('.video-timing').exists()).toBe(false)
     expect(wrapper.find('.completed-generation-timing').exists()).toBe(false)
-    expect(wrapper.get('.preview-timing').text()).toBe('Five previews: 1.25 seconds')
+    expect(wrapper.get('.preview-timing').text()).toBe('7 previews: 1.25 seconds')
     await vi.advanceTimersByTimeAsync(2500)
     expect(wrapper.get('.video-timing').text()).toBe('Video generation: 2.50 seconds')
     await wrapper.get('[aria-label="Close generated video"]').trigger('click')
@@ -349,15 +348,18 @@ describe('Production Track Video page', () => {
     expect(wrapper.find('.completed-generation-timing').exists()).toBe(false)
   })
 
-  it('shows all five picture thumbnails and switches the selected preview by template ID', async () => {
-    vi.mocked(createProductionPreviews).mockResolvedValueOnce([...previews].reverse())
+  it('shows all seven templates in API order and switches the selected preview by template ID', async () => {
+    const returnedPreviews = [...previews].reverse()
+    vi.mocked(createProductionPreviews).mockResolvedValueOnce(returnedPreviews)
     mountPage()
     await useToken()
     await loadTrack()
 
     const options = wrapper.findAll('.production-template-option')
-    expect(options).toHaveLength(5)
-    for (const [index, preview] of previews.entries()) {
+    expect(options).toHaveLength(7)
+    expect(options[0]!.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.selected-template-copy h3').text()).toBe('Vinyl Sleeve 3')
+    for (const [index, preview] of returnedPreviews.entries()) {
       const option = options[index]!
       expect(option.get('img').attributes('src')).toBe(preview.picture.url)
       await option.trigger('click')
@@ -368,6 +370,72 @@ describe('Production Track Video page', () => {
     }
     expect(createProductionPreviews).toHaveBeenCalledTimes(1)
     expect(getProductionGeneration).not.toHaveBeenCalled()
+  })
+
+  it.each(['vinyl-sleeve-2', 'vinyl-sleeve-3', 'future-template'])('submits the API-provided template ID unchanged: %s', async templateId => {
+    const returnedPreviews = [...previews, {
+      templateId: 'future-template', videoPreviewUrl: 'future.mp4', picture: { url: 'future.jpg', isDefault: false },
+    }]
+    vi.mocked(createProductionPreviews).mockResolvedValueOnce(returnedPreviews)
+    mountPage()
+    await useToken()
+    await loadTrack()
+    expect(wrapper.findAll('.production-template-option')).toHaveLength(8)
+    expect(wrapper.get('.preview-timing').text()).toBe('8 previews: 0.00 seconds')
+    const index = returnedPreviews.findIndex(preview => preview.templateId === templateId)
+    await wrapper.findAll('.production-template-option')[index]!.trigger('click')
+    await wrapper.get('.production-generate').trigger('click')
+    await flushPromises()
+    expect(startProductionGeneration).toHaveBeenCalledExactlyOnceWith(config.base, {
+      trackCoverUrl: track.pictureUrl, trackAudioUrl: track.audioUrl, templateId, startTimeSeconds: 0,
+    }, 'test-token', expect.any(AbortSignal))
+  })
+
+  it('waits for previews, preserves selection on refresh, and selects the first item if the template was removed', async () => {
+    let finishPreviews!: (value: typeof previews) => void
+    vi.mocked(createProductionPreviews).mockImplementationOnce(() => new Promise(resolve => { finishPreviews = resolve }))
+    mountPage()
+    await useToken()
+    await loadTrack()
+    expect(wrapper.findAll('.production-template-option')).toHaveLength(0)
+    expect(wrapper.get('.production-preview').text()).toContain('Generating template previews')
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    finishPreviews(previews)
+    await flushPromises()
+    await wrapper.findAll('.production-template-option')[6]!.trigger('click')
+    expect(wrapper.get('.selected-template-copy h3').text()).toBe('Vinyl Sleeve 3')
+
+    vi.mocked(createProductionPreviews).mockImplementationOnce(() => new Promise(resolve => { finishPreviews = resolve }))
+    await wrapper.get('.template-heading button').trigger('click')
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    finishPreviews([...previews].reverse())
+    await flushPromises()
+    expect(wrapper.get('.selected-template-copy h3').text()).toBe('Vinyl Sleeve 3')
+    expect(wrapper.get('.production-template-option').attributes('aria-pressed')).toBe('true')
+
+    vi.mocked(createProductionPreviews).mockResolvedValueOnce([previews[1]!])
+    await wrapper.get('.template-heading button').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('.production-template-option')).toHaveLength(1)
+    expect(wrapper.get('.selected-template-copy h3').text()).toBe('Sound Wave')
+    expect(wrapper.get('.preview-timing').text()).toBe('1 preview: 0.00 seconds')
+    expect(wrapper.get('.production-generate').attributes()).not.toHaveProperty('disabled')
+  })
+
+  it.each(['empty', 'failed'])('clears unavailable options and prevents generation after an %s preview response', async outcome => {
+    mountPage()
+    await useToken()
+    await loadTrack()
+    if (outcome === 'empty') vi.mocked(createProductionPreviews).mockResolvedValueOnce([])
+    else vi.mocked(createProductionPreviews).mockRejectedValueOnce(new Error('Preview request failed'))
+    await wrapper.get('.template-heading button').trigger('click')
+    await flushPromises()
+    expect(wrapper.findAll('.production-template-option')).toHaveLength(0)
+    expect(wrapper.get('.production-generate').attributes()).toHaveProperty('disabled')
+    expect(wrapper.get('.selected-template-copy h3').text()).toBe('Choose a template')
+    expect(wrapper.text()).toContain(outcome === 'empty' ? 'The API returned no template previews' : 'Preview request failed')
+    await wrapper.get('.production-generate').trigger('click')
+    expect(startProductionGeneration).not.toHaveBeenCalled()
   })
 
   it('falls back to muted autoplay when the browser blocks audio playback', async () => {

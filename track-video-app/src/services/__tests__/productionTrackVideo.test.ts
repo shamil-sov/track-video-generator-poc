@@ -3,7 +3,7 @@ import {
   createProductionPreviews, getProductionGeneration, normalizeTrackVideosBaseUrl,
   resolveProductionTrack, startProductionGeneration, TRACK_VIDEOS_API_BASE_URL, TRACK_VIDEO_ENVIRONMENTS,
 } from '@/services/productionTrackVideo'
-import { segmentDuration, validSegmentStart } from '@/types/productionTrackVideo'
+import { segmentDuration, templateName, validSegmentStart } from '@/types/productionTrackVideo'
 
 const postId = '8398d42e-0504-40c6-b882-bbf42294c641'
 const revisionId = 'bef1e49f-d197-4d4f-83f4-fb06eab5c6b0'
@@ -54,7 +54,7 @@ describe('Production Track Video contract', () => {
     ['uat', 'https://test.aws.bandlab.com/api/v1.3'],
     ['production', 'https://aws.bandlab.com/api/v1.3'],
   ] as const)('routes all three contracts to the %s API and polls only the returned job ID', async (environment, expectedBase) => {
-    const previews = ['audio-ring', 'sound-wave', 'record-player', 'vinyl-sleeve', 'music-notes'].map(templateId => ({
+    const previews = ['audio-ring', 'sound-wave', 'record-player', 'music-notes', 'vinyl-sleeve', 'vinyl-sleeve-2', 'vinyl-sleeve-3'].map(templateId => ({
       templateId, videoPreviewUrl: `https://cdn.example/${templateId}.mp4`,
       picture: { url: `https://cdn.example/${templateId}.jpg`, isDefault: false },
     }))
@@ -86,6 +86,15 @@ describe('Production Track Video contract', () => {
     const failed = { jobId: 'job-id', status: 'failed', error: { message: 'The source media could not be downloaded.' } }
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify(failed))))
     await expect(getProductionGeneration(TRACK_VIDEOS_API_BASE_URL, 'job-id', 'test-token')).resolves.toEqual(failed)
+  })
+
+  it.each([
+    ['audio-ring', 'Audio Ring'],
+    ['vinyl-sleeve-2', 'Vinyl Sleeve 2'],
+    ['vinyl-sleeve-3', 'Vinyl Sleeve 3'],
+    ['future-template', 'Future Template'],
+  ])('derives a display label from API template ID %s', (id, name) => {
+    expect(templateName(id)).toBe(name)
   })
 
   it.each(['', '   ', 'Bearer '])('does not send production requests without a token: %j', async token => {
